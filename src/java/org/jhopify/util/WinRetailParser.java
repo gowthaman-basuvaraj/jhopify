@@ -52,19 +52,19 @@ public class WinRetailParser {
 	public static void main(String[] args) throws InvalidFormatException, IOException {
 		// Argument check
 		if(args.length < 4) throw new IllegalArgumentException("Not enough arguments. All 4 arguments are mandatory : databasePath photoFolderPath shopifyApiKey shopifyPassword.");
-		else System.out.println("All arguments OKÉ");
+		else System.out.println("All arguments OKâ€¦");
 		
 		// Checking database
 		String databasePath = args[0];
 		File databaseFile = new File(databasePath);
 		if(!databaseFile.isFile()) throw new IllegalArgumentException("Halting. The specified database file does not exist or is not a file.");
-		else System.out.println("Database foundÉ");
+		else System.out.println("Database foundâ€¦");
 
         // Open the workbook and then create the FormulaEvaluator and
         // DataFormatter instances that will be needed to, respectively,
         // force evaluation of forumlae found in cells and create a
         // formatted String encapsulating the cells contents.
-		System.out.println("Opening workbook \"" + databaseFile.getName() + "\"É");
+		System.out.println("Opening workbook \"" + databaseFile.getName() + "\"â€¦");
 		FileInputStream databaseFileInputStream = new FileInputStream(databaseFile);
         Workbook databaseWorkbook = WorkbookFactory.create(databaseFileInputStream);
         DataFormatter databaseFormatter = new DataFormatter();
@@ -72,11 +72,11 @@ public class WinRetailParser {
         databaseFileInputStream.close();
   
 
-        System.out.println("Checking database sanityÉ");
+        System.out.println("Checking database sanityâ€¦");
         // Discover how many sheets there are in the workbook....
         // and then iterate through them.
         int databaseSheetCount = databaseWorkbook.getNumberOfSheets();
-    	System.out.println("Database Excel file has " + String.valueOf(databaseSheetCount) + " sheet(s). Iterating through themÉ");
+    	System.out.println("Database Excel file has " + String.valueOf(databaseSheetCount) + " sheet(s). Iterating through themâ€¦");
         for(int i = 0; i < databaseSheetCount; i++) {
             // Get a reference to a sheet and check to see if it contains
             // any rows.
@@ -90,7 +90,7 @@ public class WinRetailParser {
                 // which will strip the data from the cells and build lines
                 // for inclusion in the resylting CSV file.
                 int lastRowNum = sheet.getLastRowNum();
-            	System.out.println("Sheet #" + String.valueOf(i) + " has " + String.valueOf(lastRowNum + 1) + " row(s). Iterating through themÉ");
+            	System.out.println("Sheet #" + String.valueOf(i) + " has " + String.valueOf(lastRowNum + 1) + " row(s). Iterating through themâ€¦");
 
             	for(int j = 0; j <= lastRowNum; j++) {
  
@@ -105,7 +105,7 @@ public class WinRetailParser {
                         // of each cell, converting that into a formatted String.
                     	int lastCellNum = row.getLastCellNum();
                     	if(j == 0) {
-                        	System.out.println("Header (row #" + String.valueOf(j) + ") in sheet #" + String.valueOf(i) + " has " + String.valueOf(lastCellNum + 1) + " cell(s). Iterating through them and making sure all the right headers are thereÉ");
+                        	System.out.println("Header (row #" + String.valueOf(j) + ") in sheet #" + String.valueOf(i) + " has " + String.valueOf(lastCellNum + 1) + " cell(s). Iterating through them and making sure all the right headers are thereâ€¦");
 
 
 	                    	for(int k = 0; k <= lastCellNum; k++) {
@@ -128,7 +128,7 @@ public class WinRetailParser {
 	                        	}
 	                        }
 
-	                    	if(columnIndex.size() == columns.size()) System.out.println("All required columns in database found and indexedÉ");
+	                    	if(columnIndex.size() == columns.size()) System.out.println("All Ã¦required columns in database found and indexedâ€¦");
 	                    	else throw new RuntimeException("Halting. Couldn't find all required columns in database.");
 
 	                    	// No need to iterate over everything.
@@ -143,10 +143,10 @@ public class WinRetailParser {
 		String photoFolderPath = args[1];
 		File photoFolder = new File(photoFolderPath);
 		if(!photoFolder.isDirectory()) throw new IllegalArgumentException("Halting. The specified photo folder does not exist or is not a directory.");
-		else System.out.println("Picture directory foundÉ");
+		else System.out.println("Picture directory foundâ€¦");
 
 		
-		System.out.println("Trying to connect to ShopifyÉ");
+		System.out.println("Trying to connect to Shopifyâ€¦");
 		String shopifyApiKey = args[2];
 		String shopifyPassword = args[3];
 	}
