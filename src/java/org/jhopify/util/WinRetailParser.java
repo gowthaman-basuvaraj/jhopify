@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -17,7 +23,14 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 
+
+
 public class WinRetailParser {
+	static final String SHOPIFY_API_PRODUCT_LIST = "/admin/products.xml";
+	static final String SHOPIFY_API_SCHEME = "http://";
+	static final String SHOPIFY_API_DOMAIN = "myshopify.com";
+	static final int SHOPIFY_API_PORT_NUMBER = 80;
+	
 	static Map<String, Integer> columnIndex = new TreeMap<String, Integer>();
 	static Collection<String> columns = new Vector<String>();
 	static {
@@ -51,7 +64,7 @@ public class WinRetailParser {
 	
 	public static void main(String[] args) throws InvalidFormatException, IOException {
 		// Argument check
-		if(args.length < 4) throw new IllegalArgumentException("Not enough arguments. All 4 arguments are mandatory : databasePath photoFolderPath shopifyApiKey shopifyPassword.");
+		if(args.length < 5) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory : databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle.");
 		else System.out.println("All arguments OK…");
 		
 		// Checking database
@@ -105,7 +118,9 @@ public class WinRetailParser {
                         // of each cell, converting that into a formatted String.
                     	int lastCellNum = row.getLastCellNum();
                     	if(j == 0) {
-                        	System.out.println("Header (row #" + String.valueOf(j) + ") in sheet #" + String.valueOf(i) + " has " + String.valueOf(lastCellNum + 1) + " cell(s). Iterating through them and making sure all the right headers are there…");
+                        	System.out.println("Header (row #" + String.valueOf(j) + ") in sheet #" + 
+                        			String.valueOf(i) + " has " + 
+                        			String.valueOf(lastCellNum + 1) + " cell(s). Iterating through them and making sure all the right headers are there…");
 
 
 	                    	for(int k = 0; k <= lastCellNum; k++) {
@@ -128,7 +143,7 @@ public class WinRetailParser {
 	                        	}
 	                        }
 
-	                    	if(columnIndex.size() == columns.size()) System.out.println("All ærequired columns in database found and indexed…");
+	                    	if(columnIndex.size() == columns.size()) System.out.println("All required columns in database found and indexed…");
 	                    	else throw new RuntimeException("Halting. Couldn't find all required columns in database.");
 
 	                    	// No need to iterate over everything.
@@ -146,8 +161,34 @@ public class WinRetailParser {
 		else System.out.println("Picture directory found…");
 
 		
-		System.out.println("Trying to connect to Shopify…");
+		// Testing Shopify connection
 		String shopifyApiKey = args[2];
 		String shopifyPassword = args[3];
+		String shopifyStoreHandle = args[4];
+		
+
+		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
+		System.out.println("Trying to connect to Shopify at " + shopifyStoreUrl + 
+				" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
+				" with key \"" + shopifyApiKey + "\" and password \"" + shopifyPassword +  "\"…");
+		
+		
+		
+		DefaultHttpClient httpclient = new DefaultHttpClient();
+		httpclient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
+
+
+		// Get a list of all products
+        HttpGet httpget = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_LIST);
+		System.out.println("Retrieving product list at " + httpget.getURI() + "…");
+		ResponseHandler<String> responseHandler = new BasicResponseHandler();
+		String responseBody = httpclient.execute(httpget, responseHandler);
+		System.out.println(responseBody);
+        
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpclient.getConnectionManager().shutdown();   
 	}
 }
