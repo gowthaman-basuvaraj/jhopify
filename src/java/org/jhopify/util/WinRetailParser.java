@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ResponseHandler;
@@ -22,45 +25,73 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.jhopify.Product;
+import org.jhopify.ProductOption;
+import org.jhopify.ProductVariant;
 
 
-
+// TODO FR, EN
+// TODO NavX Tags 
 public class WinRetailParser {
 	static final String SHOPIFY_API_PRODUCT_LIST = "/admin/products.xml";
 	static final String SHOPIFY_API_SCHEME = "http://";
 	static final String SHOPIFY_API_DOMAIN = "myshopify.com";
 	static final int SHOPIFY_API_PORT_NUMBER = 80;
-	
-	static Map<String, Integer> columnIndex = new TreeMap<String, Integer>();
-	static Collection<String> columns = new Vector<String>();
+
+	static final String WINRETAIL_VENDOR_HEADER = "Vendor";
+	static final String WINRETAIL_STYLE_HEADER = "Style";
+	static final String WINRETAIL_SIZE_HEADER = "Size";
+	static final String WINRETAIL_QUANTITY_ON_HAND_HEADER = "Qty Onhand";
+	static final String WINRETAIL_RETAIL_PRICE_HEADER = "Retail Price";
+	static final String WINRETAIL_DISCOUNTED_PRICE_HEADER = "Discounted price";
+	static final String WINRETAIL_UPC_HEADER = "UPC";
+	static final String WINRETAIL_ALTERNATE_UPCs_HEADER = "Alternate UPC(s)";
+	static final String WINRETAIL_BIN_LOCATION_HEADER = "Bin Location Name";
+	static final String WINRETAIL_SEASON_HEADER = "Season";
+	static final String WINRETAIL_COLOR_NAME_HEADER = "Color Long Name";
+	static final String WINRETAIL_COLOR_RGB_HEX_HEADER = "Color_RGB";
+	static final String WINRETAIL_DEPT_HEADER = "Dept";
+	static final String WINRETAIL_CLASS_HEADER = "Class";
+	static final String WINRETAIL_SUBCLASS_HEADER = "Subclass";
+	static final String WINRETAIL_CAPTION_HEADER = "Caption";
+	static final String WINRETAIL_ALT_CAPTION_HEADER = "Alt Caption";
+	static final String WINRETAIL_HEADLINE_HEADER = "Headline";
+	static final String WINRETAIL_ALT_HEADLINE_HEADER = "Alt Headline";
+	static final String WINRETAIL_DESCRIPTION_HEADER = "Description";
+	static final String WINRETAIL_TICKET_DESCRIPTION_HEADER = "Ticket Description";
+
+	static final ProductOption colorOption = new ProductOption();
+	static final ProductOption sizeOption = new ProductOption();
 	static {
-		columns.add("Vendor");
-		columns.add("Style");
-		columns.add("Size");
-		columns.add("SizeNo");
-		columns.add("Qty Onhand");
-		columns.add("Retail Price");
-		columns.add("UPC");
-		columns.add("Alternate UPC(s)");
-		columns.add("Bin Location Name");
-		columns.add("Season");
-		columns.add("Color Long Name");
-		columns.add("Color_RGB");
-		columns.add("Nav1");
-		columns.add("Nav2");
-		columns.add("Nav3");
-		columns.add("Dept");
-		columns.add("Class");
-		columns.add("Subclass");
-		columns.add("Caption");
-		columns.add("Alt Caption");
-		columns.add("Headline");
-		columns.add("Alt Headline");
-		columns.add("Description");
-		columns.add("Ticket Description");
+		colorOption.setName("Color");
+		sizeOption.setName("Size");
 	}
-	
-	
+
+	static Collection<String> mandatoryColumns = new Vector<String>();
+	static {
+		mandatoryColumns.add(WINRETAIL_VENDOR_HEADER);
+		mandatoryColumns.add(WINRETAIL_STYLE_HEADER);
+		mandatoryColumns.add(WINRETAIL_SIZE_HEADER);
+		mandatoryColumns.add(WINRETAIL_QUANTITY_ON_HAND_HEADER);
+		mandatoryColumns.add(WINRETAIL_RETAIL_PRICE_HEADER);
+		mandatoryColumns.add(WINRETAIL_DISCOUNTED_PRICE_HEADER);
+		mandatoryColumns.add(WINRETAIL_UPC_HEADER);
+		mandatoryColumns.add(WINRETAIL_ALTERNATE_UPCs_HEADER);
+		mandatoryColumns.add(WINRETAIL_BIN_LOCATION_HEADER);
+		mandatoryColumns.add(WINRETAIL_SEASON_HEADER);
+		mandatoryColumns.add(WINRETAIL_COLOR_NAME_HEADER);
+		mandatoryColumns.add(WINRETAIL_COLOR_RGB_HEX_HEADER);
+		mandatoryColumns.add(WINRETAIL_DEPT_HEADER);
+		mandatoryColumns.add(WINRETAIL_CLASS_HEADER);
+		mandatoryColumns.add(WINRETAIL_SUBCLASS_HEADER);
+		mandatoryColumns.add(WINRETAIL_CAPTION_HEADER);
+		mandatoryColumns.add(WINRETAIL_ALT_CAPTION_HEADER);
+		mandatoryColumns.add(WINRETAIL_HEADLINE_HEADER);
+		mandatoryColumns.add(WINRETAIL_ALT_HEADLINE_HEADER);
+		mandatoryColumns.add(WINRETAIL_DESCRIPTION_HEADER);
+		mandatoryColumns.add(WINRETAIL_TICKET_DESCRIPTION_HEADER);
+	}
+
 	
 	public static void main(String[] args) throws InvalidFormatException, IOException {
 		// Argument check
@@ -84,12 +115,17 @@ public class WinRetailParser {
         FormulaEvaluator databaseFormulaEvaluator = databaseWorkbook.getCreationHelper().createFormulaEvaluator();
         databaseFileInputStream.close();
   
-
-        System.out.println("Checking database sanity…");
         // Discover how many sheets there are in the workbook....
         // and then iterate through them.
         int databaseSheetCount = databaseWorkbook.getNumberOfSheets();
-    	System.out.println("Database Excel file has " + String.valueOf(databaseSheetCount) + " sheet(s). Iterating through them…");
+  
+        System.out.println("Sucessfuly opend database Excel file. Checking database sanity. Database Excel file has " + String.valueOf(databaseSheetCount) + " sheet(s). Iterating through them…");
+    	
+    	// Prepare product database
+    	Map<String, Product> winRetailProductDatabase = new TreeMap<String, Product>();
+    	
+    	// Stat variables
+    	int variantCount = 0;
         for(int i = 0; i < databaseSheetCount; i++) {
             // Get a reference to a sheet and check to see if it contains
             // any rows.
@@ -105,6 +141,9 @@ public class WinRetailParser {
                 int lastRowNum = sheet.getLastRowNum();
             	System.out.println("Sheet #" + String.valueOf(i) + " has " + String.valueOf(lastRowNum + 1) + " row(s). Iterating through them…");
 
+            	// Prepare column index
+            	Map<Integer, String> columnIndex = new TreeMap<Integer, String>();
+            	
             	for(int j = 0; j <= lastRowNum; j++) {
  
                 	// Check to ensure that a row was recovered from the sheet as it is
@@ -136,23 +175,89 @@ public class WinRetailParser {
 		                            // Check if header is in column list
 		                            if(cellValue != null) {
 		                            	cellValue = cellValue.trim();
-		                            	if(columns.contains(cellValue)) {
-			                            	columnIndex.put(cellValue, k);
+		                            	if(mandatoryColumns.contains(cellValue)) {
+			                            	columnIndex.put(k, cellValue);
 		                            	}
 		                            }
 	                        	}
 	                        }
 
-	                    	if(columnIndex.size() == columns.size()) System.out.println("All required columns in database found and indexed…");
-	                    	else throw new RuntimeException("Halting. Couldn't find all required columns in database.");
+	                    	if(columnIndex.size() == mandatoryColumns.size()) System.out.println("All required columns in database found and indexed…");
+	                    	else {
+	                    		StringBuffer sb = new StringBuffer();
+	                    		sb.append("Halting. Couldn't find all required columns in database. Missing:");
+	                    		for(String column : mandatoryColumns) {
+	                    			if(!columnIndex.containsValue(column)) {
+	                    				sb.append(' ');
+	                    				sb.append(column);
+	                    			}
+	                    			sb.append('.');
+	                    		}
+	                    		throw new RuntimeException(sb.toString());
+	                    	}
+                    	} else {
+                    		
+                    		// Put all values in Map for now
+                    		Map<String, String> winRetailDatabaseRow = new TreeMap<String, String>();
+	                    	for(int k = 0; k <= lastCellNum; k++) {
+	                    		String columnName = columnIndex.get(k);
+	                    		if(columnName != null) {
+		                        	Cell cell = row.getCell(k);
+		                        	if(cell != null) {
+			                        	String cellValue = null;
+			                            if(cell.getCellType() == Cell.CELL_TYPE_FORMULA) {
+			                            	cellValue = databaseFormatter.formatCellValue(cell, databaseFormulaEvaluator);
+			                            } else {
+			                            	cellValue = databaseFormatter.formatCellValue(cell);
+			                            }
 
-	                    	// No need to iterate over everything.
-	                    	break;
+			                            // Check if column is known as required value
+			                            if(cellValue != null) {
+			                            	cellValue = cellValue.trim();
+			                            	winRetailDatabaseRow.put(columnName, cellValue);
+			                            }
+		                        	}
+	                    		}
+	                        }
+
+	                    	// Parse Product/Variant from Map
+	                    	String style = winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER);
+	                    	if(style != null) {
+		                    	Product product = winRetailProductDatabase.get(style);
+		                    	if(product == null) {
+		                    		// First variant for product, create and parse product
+		                    		product = new Product();
+		                    		product.setHandle(style);
+
+		                    		product.setBodyHtml(winRetailDatabaseRow.get(WINRETAIL_HEADLINE_HEADER));
+		                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_SUBCLASS_HEADER));
+		                    		product.setPublishedAt(new Date());
+		                    		product.setTitle(winRetailDatabaseRow.get(WINRETAIL_DESCRIPTION_HEADER));
+		                    		product.setVendor(winRetailDatabaseRow.get(WINRETAIL_VENDOR_HEADER));
+
+		                    		product.getOptions().add(colorOption);
+		                    		product.getOptions().add(sizeOption);
+		                    		
+		                    		winRetailProductDatabase.put(style, product);
+		                    	}
+
+		                    	ProductVariant variant = new ProductVariant();
+		                    	variant.setCompareAtPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_RETAIL_PRICE_HEADER)));
+		                    	variant.setInventoryManagement(ProductVariant.SHOPIFY_API_INVENTORY_TRACKED_BY_SHOPIFY_VALUE);
+		                    	variant.setInventoryPolicy(ProductVariant.SHOPIFY_API_INVENTORY_POLICY_DENY_VALUE);
+		                    	variant.setInventoryQuantity(Integer.parseInt(winRetailDatabaseRow.get(WINRETAIL_QUANTITY_ON_HAND_HEADER)) + 10);
+		                    	variant.setOption1(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER));
+		                    	variant.setOption2(winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER));
+		                    	variant.setPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_DISCOUNTED_PRICE_HEADER)));
+		                    	variant.setSku(winRetailDatabaseRow.get(WINRETAIL_UPC_HEADER));
+		                    	variantCount++;
+	                    	}
                     	}
                     }
                 }
             }
         }
+        System.out.println("Successfuly parsed WinRetail database. Found " + winRetailProductDatabase.size() + " products in database, for an average of " + String.valueOf(variantCount / winRetailProductDatabase.size()) + " variation(s) per product…");
 
 		// Checking photo library
 		String photoFolderPath = args[1];
@@ -165,30 +270,36 @@ public class WinRetailParser {
 		String shopifyApiKey = args[2];
 		String shopifyPassword = args[3];
 		String shopifyStoreHandle = args[4];
-		
+
 
 		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
+
+		DefaultHttpClient httpClient = new DefaultHttpClient();
+		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
+
+		
+		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
+        HttpGet httpGet = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_LIST);
+        
+
 		System.out.println("Trying to connect to Shopify at " + shopifyStoreUrl + 
 				" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
-				" with key \"" + shopifyApiKey + "\" and password \"" + shopifyPassword +  "\"…");
-		
-		
-		
-		DefaultHttpClient httpclient = new DefaultHttpClient();
-		httpclient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
+				" with key \"" + shopifyApiKey + "\" and password \"" + shopifyPassword +  "\", by retrieving product list at " + httpGet.getURI() + ".");
+		HttpResponse response = httpClient.execute(httpGet);
+		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly connected to Shopify…");
+		else throw new IllegalArgumentException("Halting. Connection with Shopify API failed : " + response.getStatusLine().toString());
+			
 
-
-		// Get a list of all products
-        HttpGet httpget = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_LIST);
-		System.out.println("Retrieving product list at " + httpget.getURI() + "…");
-		ResponseHandler<String> responseHandler = new BasicResponseHandler();
-		String responseBody = httpclient.execute(httpget, responseHandler);
-		System.out.println(responseBody);
-        
         // When HttpClient instance is no longer needed, 
         // shut down the connection manager to ensure
         // immediate deallocation of all system resources
-        httpclient.getConnectionManager().shutdown();   
+        httpClient.getConnectionManager().shutdown();   
+
+        // Create first 2 products
+
+        // Append images for those 2 products
+
+        // Update solr indexes
 	}
 }
