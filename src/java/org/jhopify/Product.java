@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement(name="product")
 public class Product {
 	
 	String id;
@@ -119,6 +123,8 @@ public class Product {
 	/**
 	 * @return the variants
 	 */
+	@XmlElementWrapper( name="variants" )
+	@XmlElement( name="variant" )
 	public List<ProductVariant> getVariants() {
 		return variants;
 	}
@@ -143,6 +149,8 @@ public class Product {
 	/**
 	 * @return the options
 	 */
+	@XmlElementWrapper( name="options" )
+	@XmlElement( name="option" )
 	public List<ProductOption> getOptions() {
 		return options;
 	}

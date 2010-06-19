@@ -3,28 +3,30 @@ package org.jhopify.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.jhopify.Product;
 import org.jhopify.ProductOption;
 import org.jhopify.ProductVariant;
@@ -32,6 +34,7 @@ import org.jhopify.ProductVariant;
 
 // TODO FR, EN
 // TODO NavX Tags 
+// TODO Use enum for constants headers
 public class WinRetailParser {
 	static final String SHOPIFY_API_PRODUCT_LIST = "/admin/products.xml";
 	static final String SHOPIFY_API_SCHEME = "http://";
@@ -231,7 +234,6 @@ public class WinRetailParser {
 
 		                    		product.setBodyHtml(winRetailDatabaseRow.get(WINRETAIL_HEADLINE_HEADER));
 		                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_SUBCLASS_HEADER));
-		                    		product.setPublishedAt(new Date());
 		                    		product.setTitle(winRetailDatabaseRow.get(WINRETAIL_DESCRIPTION_HEADER));
 		                    		product.setVendor(winRetailDatabaseRow.get(WINRETAIL_VENDOR_HEADER));
 
@@ -250,6 +252,7 @@ public class WinRetailParser {
 		                    	variant.setOption2(winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER));
 		                    	variant.setPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_DISCOUNTED_PRICE_HEADER)));
 		                    	variant.setSku(winRetailDatabaseRow.get(WINRETAIL_UPC_HEADER));
+		                    	product.getVariants().add(variant);
 		                    	variantCount++;
 	                    	}
                     	}
@@ -257,7 +260,8 @@ public class WinRetailParser {
                 }
             }
         }
-        System.out.println("Successfuly parsed WinRetail database. Found " + winRetailProductDatabase.size() + " products in database, for an average of " + String.valueOf(variantCount / winRetailProductDatabase.size()) + " variation(s) per product…");
+        System.out.println("Successfuly parsed WinRetail database. Found " + winRetailProductDatabase.size() + " products in database, for an average of " + 
+        		String.valueOf(variantCount / winRetailProductDatabase.size()) + " variation(s) per product…");
 
 		// Checking photo library
 		String photoFolderPath = args[1];
@@ -276,7 +280,8 @@ public class WinRetailParser {
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 
 		DefaultHttpClient httpClient = new DefaultHttpClient();
-		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
+		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), 
+				new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
 
 		
 		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
@@ -289,7 +294,21 @@ public class WinRetailParser {
 		HttpResponse response = httpClient.execute(httpGet);
 		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly connected to Shopify…");
 		else throw new IllegalArgumentException("Halting. Connection with Shopify API failed : " + response.getStatusLine().toString());
-			
+		
+		
+		try {
+			JAXBContext jaxbContext = JAXBContext.newInstance( Product.class );
+			Marshaller marshaller = jaxbContext.createMarshaller();
+			marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
+			StringWriter stringWriter = new StringWriter();
+			for(Product product : winRetailProductDatabase.values()) {
+				marshaller.marshal(product, stringWriter);
+				System.out.println(stringWriter.toString());
+				break;
+			}
+		} catch (JAXBException e) {
+			throw new RuntimeException(e);
+		}
 
         // When HttpClient instance is no longer needed, 
         // shut down the connection manager to ensure
