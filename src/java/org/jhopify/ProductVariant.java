@@ -4,6 +4,8 @@ package org.jhopify;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+
 
 public class ProductVariant {
 	public final static String SHOPIFY_API_MANUAL_FULLFILMENT = "manual";
@@ -68,6 +70,7 @@ public class ProductVariant {
 	/**
 	 * @return the compareAtPrice
 	 */
+	@XmlElement(name = "compare-at-price")
 	public Float getCompareAtPrice() {
 		return compareAtPrice;
 	}
@@ -80,6 +83,7 @@ public class ProductVariant {
 	/**
 	 * @return the fullfilmentService
 	 */
+	@XmlElement(name = "fullfilment-service")
 	public String getFullfilmentService() {
 		return fullfilmentService;
 	}
@@ -92,6 +96,7 @@ public class ProductVariant {
 	/**
 	 * @return the inventoryManagement
 	 */
+	@XmlElement(name = "inventory-management")
 	public String getInventoryManagement() {
 		return inventoryManagement;
 	}
@@ -104,6 +109,7 @@ public class ProductVariant {
 	/**
 	 * @return the inventoryPolicy
 	 */
+	@XmlElement(name = "inventory-policy")
 	public String getInventoryPolicy() {
 		return inventoryPolicy;
 	}
@@ -116,6 +122,7 @@ public class ProductVariant {
 	/**
 	 * @return the inventoryQuantity
 	 */
+	@XmlElement(name = "inventory-quantity")
 	public Integer getInventoryQuantity() {
 		return inventoryQuantity;
 	}
@@ -176,6 +183,7 @@ public class ProductVariant {
 	/**
 	 * @return the requiresShipping
 	 */
+	@XmlElement(name = "requires-shipping")
 	public Boolean getRequiresShipping() {
 		return requiresShipping;
 	}

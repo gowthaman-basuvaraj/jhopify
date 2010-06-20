@@ -63,6 +63,7 @@ public class Product {
 	/**
 	 * @return the productType
 	 */
+	@XmlElement(name = "product-type")
 	public String getProductType() {
 		return productType;
 	}
@@ -111,6 +112,7 @@ public class Product {
 	/**
 	 * @return the bodyHtml
 	 */
+	@XmlElement(name = "body-html")
 	public String getBodyHtml() {
 		return bodyHtml;
 	}

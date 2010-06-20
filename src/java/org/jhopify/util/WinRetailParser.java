@@ -1,8 +1,10 @@
 package org.jhopify.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
@@ -13,11 +15,14 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -36,7 +41,7 @@ import org.jhopify.ProductVariant;
 // TODO NavX Tags 
 // TODO Use enum for constants headers
 public class WinRetailParser {
-	static final String SHOPIFY_API_PRODUCT_LIST = "/admin/products.xml";
+	static final String SHOPIFY_API_PRODUCT_URI = "/admin/products.xml";
 	static final String SHOPIFY_API_SCHEME = "http://";
 	static final String SHOPIFY_API_DOMAIN = "myshopify.com";
 	static final int SHOPIFY_API_PORT_NUMBER = 80;
@@ -283,18 +288,20 @@ public class WinRetailParser {
 		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), 
 				new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
 
-		
+
 		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
-        HttpGet httpGet = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_LIST);
+        HttpGet httpGet = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI);
         
 
 		System.out.println("Trying to connect to Shopify at " + shopifyStoreUrl + 
 				" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
 				" with key \"" + shopifyApiKey + "\" and password \"" + shopifyPassword +  "\", by retrieving product list at " + httpGet.getURI() + ".");
-		HttpResponse response = httpClient.execute(httpGet);
-		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly connected to Shopify…");
-		else throw new IllegalArgumentException("Halting. Connection with Shopify API failed : " + response.getStatusLine().toString());
-		
+		HttpResponse connectionTestResponse = httpClient.execute(httpGet);
+		HttpEntity productListEntity = connectionTestResponse.getEntity();
+		productListEntity.getContent().close();
+		if(connectionTestResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly connected to Shopify…");
+		else throw new IllegalArgumentException("Halting. Connection with Shopify API failed : " + connectionTestResponse.getStatusLine().toString());
+
 		
 		try {
 			JAXBContext jaxbContext = JAXBContext.newInstance( Product.class );
@@ -303,22 +310,51 @@ public class WinRetailParser {
 			StringWriter stringWriter = new StringWriter();
 			for(Product product : winRetailProductDatabase.values()) {
 				marshaller.marshal(product, stringWriter);
-				System.out.println(stringWriter.toString());
+		        HttpPost productHttpPost = new HttpPost(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI);
+		        String productEntityString = stringWriter.toString();
+		        System.out.println(productEntityString);
+		        StringEntity productEntity = new StringEntity(productEntityString);
+		        productEntity.setContentType("application/xml");
+		        productHttpPost.setEntity(productEntity);
+		        HttpResponse productPostResponse = httpClient.execute(productHttpPost);
+				if(productPostResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly posted product to Shopify…");
+				else {
+					HttpEntity errorMessageEntity = productPostResponse.getEntity();
+					BufferedReader errorEntityReader = new BufferedReader(new InputStreamReader(errorMessageEntity.getContent()));
+					StringBuffer sb = new StringBuffer();
+				    int character = -1;
+				    while( ( character = errorEntityReader.read() ) != -1 ) {
+				    	sb.append( (char) character );
+				    }
+					throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + productPostResponse.getStatusLine().toString() + " " + sb);
+				}
+				
+				// Get entity from response
+				HttpEntity productResponseEntity = productPostResponse.getEntity();
+				BufferedReader productEntityReader = new BufferedReader(new InputStreamReader(productResponseEntity.getContent()));
+				StringBuffer sb = new StringBuffer();
+			    int character = -1;
+			    while( ( character = productEntityReader.read() ) != -1 ) {
+			    	sb.append( (char) character );
+			    }
+			    System.out.println(sb);
 				break;
 			}
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}
 
-        // When HttpClient instance is no longer needed, 
-        // shut down the connection manager to ensure
-        // immediate deallocation of all system resources
-        httpClient.getConnectionManager().shutdown();   
 
         // Create first 2 products
 
         // Append images for those 2 products
 
         // Update solr indexes
+		
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpClient.getConnectionManager().shutdown();  
 	}
 }
