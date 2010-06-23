@@ -1,29 +1,19 @@
 package org.jhopify.util;
 
-import java.io.BufferedReader;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
+import javax.imageio.ImageIO;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -41,10 +31,8 @@ import org.jhopify.ProductVariant;
 // TODO NavX Tags 
 // TODO Use enum for constants headers
 public class WinRetailParser {
-	static final String SHOPIFY_API_PRODUCT_URI = "/admin/products.xml";
-	static final String SHOPIFY_API_SCHEME = "http://";
-	static final String SHOPIFY_API_DOMAIN = "myshopify.com";
-	static final int SHOPIFY_API_PORT_NUMBER = 80;
+	static final String PRODUCT_IMAGE_FORMAT = "jpg";
+	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
 
 	static final String WINRETAIL_VENDOR_HEADER = "Vendor";
 	static final String WINRETAIL_STYLE_HEADER = "Style";
@@ -105,7 +93,20 @@ public class WinRetailParser {
 		// Argument check
 		if(args.length < 5) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory : databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle.");
 		else System.out.println("All arguments OK…");
-		
+
+		// Checking photo library
+		String photoFolderPath = args[1];
+		File photoFolder = new File(photoFolderPath);
+		if(!photoFolder.isDirectory()) throw new IllegalArgumentException("Halting. The specified photo folder does not exist or is not a directory.");
+		else System.out.println("Picture directory found…");
+		// Put all files in a case insensitive map because, we need the exact cases when hosted on linux
+		List<File> photos = Arrays.asList(photoFolder.listFiles());
+		Map<String, File> photoMap = new TreeMap<String, File>();
+		for(File photo : photos) {
+			photoMap.put(photo.getName().toUpperCase().toLowerCase(), photo);
+		}
+
+
 		// Checking database
 		String databasePath = args[0];
 		File databaseFile = new File(databasePath);
@@ -237,27 +238,101 @@ public class WinRetailParser {
 		                    		product = new Product();
 		                    		product.setHandle(style);
 
+		                    		// Set product attributes
 		                    		product.setBodyHtml(winRetailDatabaseRow.get(WINRETAIL_HEADLINE_HEADER));
 		                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_SUBCLASS_HEADER));
 		                    		product.setTitle(winRetailDatabaseRow.get(WINRETAIL_DESCRIPTION_HEADER));
 		                    		product.setVendor(winRetailDatabaseRow.get(WINRETAIL_VENDOR_HEADER));
 
+		                    		// Set option names for product
 		                    		product.getOptions().add(colorOption);
 		                    		product.getOptions().add(sizeOption);
-		                    		
-		                    		winRetailProductDatabase.put(style, product);
+
+		                    		// Check for (mandatory) picture
+		                    		String variantImageFilePath = getVariantImageFileNameFromDatabaseRow(winRetailDatabaseRow);
+		                    		File originalProductImageFile = photoMap.get(variantImageFilePath.toUpperCase().toLowerCase());
+		                    		if(originalProductImageFile != null && originalProductImageFile.isFile()) {
+
+		                    			// Check if image is sane
+		                    			BufferedImage productOriginalImage;
+		                    			try {
+			                    			productOriginalImage = ImageIO.read(originalProductImageFile);
+		                    			} catch(Exception e) {
+			                    			// There must be a picture for every variant AND product
+			                    			// Otherwise : on to the next one
+			                    			System.out.println("Invalid product image : " + originalProductImageFile.getName());
+			                    			continue;
+		                    			}
+		                    			
+		                    			// Prepare BW image
+		                    			BufferedImage productImage = new BufferedImage(productOriginalImage.getWidth(), productOriginalImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);  
+		                    			Graphics g = productImage.getGraphics();  
+		                    			g.drawImage(productOriginalImage, 0, 0, null);  
+		                    			g.dispose();
+		                    			
+		                    			// Write image
+		                    			File productImageFile = new File(getProductImageFilePathFromDatabaseRow(winRetailDatabaseRow, photoFolder));
+		                    			ImageIO.write(productImage, PRODUCT_IMAGE_FORMAT, productImageFile);
+
+		                    			// Add image name to product image list
+		                    			product.getImageNames().add(productImageFile.getName());
+	
+		                    			// register product
+		                    			winRetailProductDatabase.put(style, product);
+		                    		} else {
+		                    			// There must be a picture for every variant AND product
+		                    			// Otherwise : on to the next one
+		                    			System.out.println("Expected product picture not found : " + variantImageFilePath);
+		                    			continue;
+		                    		}
+
 		                    	}
 
+		                    	// Create product variant object
 		                    	ProductVariant variant = new ProductVariant();
 		                    	variant.setCompareAtPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_RETAIL_PRICE_HEADER)));
 		                    	variant.setInventoryManagement(ProductVariant.SHOPIFY_API_INVENTORY_TRACKED_BY_SHOPIFY_VALUE);
 		                    	variant.setInventoryPolicy(ProductVariant.SHOPIFY_API_INVENTORY_POLICY_DENY_VALUE);
-		                    	variant.setInventoryQuantity(Integer.parseInt(winRetailDatabaseRow.get(WINRETAIL_QUANTITY_ON_HAND_HEADER)) + 10);
+		                    	variant.setInventoryQuantity(Integer.parseInt(winRetailDatabaseRow.get(WINRETAIL_QUANTITY_ON_HAND_HEADER)));
 		                    	variant.setOption1(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER));
 		                    	variant.setOption2(winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER));
 		                    	variant.setPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_DISCOUNTED_PRICE_HEADER)));
 		                    	variant.setSku(winRetailDatabaseRow.get(WINRETAIL_UPC_HEADER));
-		                    	product.getVariants().add(variant);
+
+		                    	// Check for mandatory variant picture
+	                    		String variantImageFileName = getVariantImageFileNameFromDatabaseRow(winRetailDatabaseRow);
+	                    		File originalVariantImageFile = photoMap.get(variantImageFileName.toUpperCase().toLowerCase());
+	                    		if(originalVariantImageFile != null && product.getImageNames().contains(originalVariantImageFile.getName())) {
+	                    			// Product already has picture for this color (there is no picture per color/size, only per color)
+	                    			// Register variant
+			                    	product.getVariants().add(variant);
+	                    			
+	                    		} else {
+		                    		if(originalVariantImageFile != null && originalVariantImageFile.isFile()) {
+		                    			// Product has no picture registered for this color
+		                    			// Check if variant image is sane
+		                    			try {
+		                    				ImageIO.read(originalVariantImageFile);
+		                    			} catch(Exception e) {
+			                    			// There must be a picture for every variant AND product
+			                    			// Otherwise : on to the next one
+			                    			System.out.println("Invalid variant image : " + originalVariantImageFile.getName());
+			                    			continue;
+		                    			}
+
+		                    			// Add image name to product image list
+		                    			product.getImageNames().add(originalVariantImageFile.getName());
+
+		                    			// register variant
+				                    	product.getVariants().add(variant);
+		                    		} else {
+		                    			// There must be a picture for every variant AND product
+		                    			// Otherwise : on to the next one
+		                    			System.out.println("Expected product variant not found : " + variantImageFileName);
+		                    			continue;
+		                    		}
+	                    			
+	                    		}
 		                    	variantCount++;
 	                    	}
                     	}
@@ -268,93 +343,21 @@ public class WinRetailParser {
         System.out.println("Successfuly parsed WinRetail database. Found " + winRetailProductDatabase.size() + " products in database, for an average of " + 
         		String.valueOf(variantCount / winRetailProductDatabase.size()) + " variation(s) per product…");
 
-		// Checking photo library
-		String photoFolderPath = args[1];
-		File photoFolder = new File(photoFolderPath);
-		if(!photoFolder.isDirectory()) throw new IllegalArgumentException("Halting. The specified photo folder does not exist or is not a directory.");
-		else System.out.println("Picture directory found…");
+        System.out.println("Outputting CSV File…");
+        CSVWriter.writeCSV(databaseFile.getParentFile(), databaseFile.getName().replace("xls", "csv"), PRODUCT_IMAGE_WEB_PREFIX, winRetailProductDatabase.values());
 
-		
-		// Testing Shopify connection
-		String shopifyApiKey = args[2];
-		String shopifyPassword = args[3];
-		String shopifyStoreHandle = args[4];
+//		// Testing Shopify connection
+//		String shopifyApiKey = args[2];
+//		String shopifyPassword = args[3];
+//		String shopifyStoreHandle = args[4];
+	}
 
-
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
-		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
-
-		DefaultHttpClient httpClient = new DefaultHttpClient();
-		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), 
-				new UsernamePasswordCredentials(shopifyApiKey, shopifyPassword));
-
-
-		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
-        HttpGet httpGet = new HttpGet(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI);
-        
-
-		System.out.println("Trying to connect to Shopify at " + shopifyStoreUrl + 
-				" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
-				" with key \"" + shopifyApiKey + "\" and password \"" + shopifyPassword +  "\", by retrieving product list at " + httpGet.getURI() + ".");
-		HttpResponse connectionTestResponse = httpClient.execute(httpGet);
-		HttpEntity productListEntity = connectionTestResponse.getEntity();
-		productListEntity.getContent().close();
-		if(connectionTestResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly connected to Shopify…");
-		else throw new IllegalArgumentException("Halting. Connection with Shopify API failed : " + connectionTestResponse.getStatusLine().toString());
-
-		
-		try {
-			JAXBContext jaxbContext = JAXBContext.newInstance( Product.class );
-			Marshaller marshaller = jaxbContext.createMarshaller();
-			marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
-			StringWriter stringWriter = new StringWriter();
-			for(Product product : winRetailProductDatabase.values()) {
-				marshaller.marshal(product, stringWriter);
-		        HttpPost productHttpPost = new HttpPost(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI);
-		        String productEntityString = stringWriter.toString();
-		        System.out.println(productEntityString);
-		        StringEntity productEntity = new StringEntity(productEntityString);
-		        productEntity.setContentType("application/xml");
-		        productHttpPost.setEntity(productEntity);
-		        HttpResponse productPostResponse = httpClient.execute(productHttpPost);
-				if(productPostResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) System.out.println("Successfuly posted product to Shopify…");
-				else {
-					HttpEntity errorMessageEntity = productPostResponse.getEntity();
-					BufferedReader errorEntityReader = new BufferedReader(new InputStreamReader(errorMessageEntity.getContent()));
-					StringBuffer sb = new StringBuffer();
-				    int character = -1;
-				    while( ( character = errorEntityReader.read() ) != -1 ) {
-				    	sb.append( (char) character );
-				    }
-					throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + productPostResponse.getStatusLine().toString() + " " + sb);
-				}
-				
-				// Get entity from response
-				HttpEntity productResponseEntity = productPostResponse.getEntity();
-				BufferedReader productEntityReader = new BufferedReader(new InputStreamReader(productResponseEntity.getContent()));
-				StringBuffer sb = new StringBuffer();
-			    int character = -1;
-			    while( ( character = productEntityReader.read() ) != -1 ) {
-			    	sb.append( (char) character );
-			    }
-			    System.out.println(sb);
-				break;
-			}
-		} catch (JAXBException e) {
-			throw new RuntimeException(e);
-		}
-
-
-        // Create first 2 products
-
-        // Append images for those 2 products
-
-        // Update solr indexes
-		
-
-        // When HttpClient instance is no longer needed, 
-        // shut down the connection manager to ensure
-        // immediate deallocation of all system resources
-        httpClient.getConnectionManager().shutdown();  
+	public static String getProductImageFilePathFromDatabaseRow(Map<String, String> winRetailDatabaseRow, File photoFolder) {
+		StringBuffer sb = new StringBuffer();
+		return sb.append(photoFolder.getAbsolutePath()).append(File.separator).append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append(".jpg").toString();
+	}
+	public static String getVariantImageFileNameFromDatabaseRow(Map<String, String> winRetailDatabaseRow) {
+		StringBuffer sb = new StringBuffer();
+		return sb.append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append("~").append(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER)).append(".jpg").toString();
 	}
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 @XmlRootElement(name="product")
 public class Product {
@@ -19,6 +20,7 @@ public class Product {
 	String title;
 	String tags;
 	String bodyHtml;
+	List<String> imageNames = new ArrayList<String>();
 	List<ProductOption> options = new ArrayList<ProductOption>();
 	List<ProductVariant> variants = new ArrayList<ProductVariant>();
 	List<Metafield> metafields = new ArrayList<Metafield>();
@@ -161,5 +163,18 @@ public class Product {
 	 */
 	public void setOptions(List<ProductOption> options) {
 		this.options = options;
+	}
+	/**
+	 * @return the imageNames
+	 */
+	@XmlTransient
+	public List<String> getImageNames() {
+		return imageNames;
+	}
+	/**
+	 * @param imageNames the imageNames to set
+	 */
+	public void setImageNames(List<String> imageNames) {
+		this.imageNames = imageNames;
 	}
 }
