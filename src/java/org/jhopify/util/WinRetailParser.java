@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.TreeMap;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
+import javax.xml.bind.JAXBException;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -22,17 +24,25 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.jhopify.Metafield;
 import org.jhopify.Product;
 import org.jhopify.ProductOption;
 import org.jhopify.ProductVariant;
+import org.jhopify.api.ProductAPI;
 
 
 // TODO FR, EN
 // TODO NavX Tags 
 // TODO Use enum for constants headers
 public class WinRetailParser {
+	static final boolean IMAGE_PROCESSING_ENABLED = false;
+	static final boolean CSV_OUTPUT_ENABLED = false;
+	static final boolean METAFIELD_POSTING_ENABLED = true;
+	
 	static final String PRODUCT_IMAGE_FORMAT = "jpg";
 	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
+	static final String PRODUCT_SEASON_METAFIELD_KEY = "season";
+	static final String VARIANT_RGB_COLOR_COORD_METAFIELD_KEY = "RGBColor";
 
 	static final String WINRETAIL_VENDOR_HEADER = "Vendor";
 	static final String WINRETAIL_STYLE_HEADER = "Style";
@@ -55,6 +65,7 @@ public class WinRetailParser {
 	static final String WINRETAIL_ALT_HEADLINE_HEADER = "Alt Headline";
 	static final String WINRETAIL_DESCRIPTION_HEADER = "Description";
 	static final String WINRETAIL_TICKET_DESCRIPTION_HEADER = "Ticket Description";
+	static final String WINRETAIL_ITEM_WEIGHT_HEADER = "Item Weight";
 
 	static final ProductOption colorOption = new ProductOption();
 	static final ProductOption sizeOption = new ProductOption();
@@ -86,12 +97,14 @@ public class WinRetailParser {
 		mandatoryColumns.add(WINRETAIL_ALT_HEADLINE_HEADER);
 		mandatoryColumns.add(WINRETAIL_DESCRIPTION_HEADER);
 		mandatoryColumns.add(WINRETAIL_TICKET_DESCRIPTION_HEADER);
+		mandatoryColumns.add(WINRETAIL_ITEM_WEIGHT_HEADER);
 	}
 
 	
-	public static void main(String[] args) throws InvalidFormatException, IOException {
+	public static void main(String[] args) throws InvalidFormatException, IOException, IllegalStateException, JAXBException, URISyntaxException {
 		// Argument check
-		if(args.length < 5) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory : databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle.");
+		if(args.length < 6) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory :" +
+				" databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle metafieldNamespace.");
 		else System.out.println("All arguments OK…");
 
 		// Checking photo library
@@ -99,19 +112,53 @@ public class WinRetailParser {
 		File photoFolder = new File(photoFolderPath);
 		if(!photoFolder.isDirectory()) throw new IllegalArgumentException("Halting. The specified photo folder does not exist or is not a directory.");
 		else System.out.println("Picture directory found…");
-		// Put all files in a case insensitive map because, we need the exact cases when hosted on linux
-		List<File> photos = Arrays.asList(photoFolder.listFiles());
-		Map<String, File> photoMap = new TreeMap<String, File>();
-		for(File photo : photos) {
-			photoMap.put(photo.getName().toUpperCase().toLowerCase(), photo);
-		}
-
 
 		// Checking database
 		String databasePath = args[0];
 		File databaseFile = new File(databasePath);
 		if(!databaseFile.isFile()) throw new IllegalArgumentException("Halting. The specified database file does not exist or is not a file.");
 		else System.out.println("Database found…");
+		
+
+    	// Prepare product database
+		String metafieldNamespace = args[5];
+    	Map<String, Product> winRetailProductDatabase = parseProductDatabase(databaseFile, photoFolder, metafieldNamespace);
+
+        if(CSV_OUTPUT_ENABLED) {
+            System.out.println("Outputting CSV File…");
+            CSVWriter.writeCSV(databaseFile.getParentFile(), databaseFile.getName().replace("xls", "csv"), PRODUCT_IMAGE_WEB_PREFIX, winRetailProductDatabase.values());
+        }
+
+		// Testing Shopify connection
+		String shopifyApiKey = args[2];
+		String shopifyPassword = args[3];
+		String shopifyStoreHandle = args[4];
+	
+        if(METAFIELD_POSTING_ENABLED) {
+            List<Product> productsFromAPI = ProductAPI.getProductListFromAPI(shopifyApiKey, shopifyPassword, shopifyStoreHandle);
+            ProductAPI.addAllMetafields(shopifyApiKey, shopifyPassword, shopifyStoreHandle, productsFromAPI, winRetailProductDatabase);
+        }
+	}
+
+	public static String getProductImageFilePathFromDatabaseRow(Map<String, String> winRetailDatabaseRow, File photoFolder) {
+		StringBuffer sb = new StringBuffer();
+		return sb.append(photoFolder.getAbsolutePath()).append(File.separator).append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append(".jpg").toString();
+	}
+	public static String getVariantImageFileNameFromDatabaseRow(Map<String, String> winRetailDatabaseRow) {
+		StringBuffer sb = new StringBuffer();
+		return sb.append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append("~").append(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER)).append(".jpg").toString();
+	}
+
+	
+	public static Map<String, Product> parseProductDatabase(File databaseFile, File photoFolder, String metafieldNamespace) throws InvalidFormatException, IOException {
+		Map<String, Product> output = new TreeMap<String, Product>();
+
+		// Put all files in a case insensitive map because, we need the exact cases when hosted on linux
+		List<File> photos = Arrays.asList(photoFolder.listFiles());
+		Map<String, File> photoMap = new TreeMap<String, File>();
+		for(File photo : photos) {
+			photoMap.put(photo.getName().toUpperCase().toLowerCase(), photo);
+		}
 
         // Open the workbook and then create the FormulaEvaluator and
         // DataFormatter instances that will be needed to, respectively,
@@ -128,10 +175,9 @@ public class WinRetailParser {
         // and then iterate through them.
         int databaseSheetCount = databaseWorkbook.getNumberOfSheets();
   
-        System.out.println("Sucessfuly opend database Excel file. Checking database sanity. Database Excel file has " + String.valueOf(databaseSheetCount) + " sheet(s). Iterating through them…");
+        System.out.println("Sucessfuly opend database Excel file. Checking database sanity. Database Excel file has " + 
+        		String.valueOf(databaseSheetCount) + " sheet(s). Iterating through them…");
     	
-    	// Prepare product database
-    	Map<String, Product> winRetailProductDatabase = new TreeMap<String, Product>();
     	
     	// Stat variables
     	int variantCount = 0;
@@ -232,7 +278,10 @@ public class WinRetailParser {
 	                    	// Parse Product/Variant from Map
 	                    	String style = winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER);
 	                    	if(style != null) {
-		                    	Product product = winRetailProductDatabase.get(style);
+	                    		// Shopify handles are lowercase only
+	                    		style = style.toUpperCase().toLowerCase();
+
+	                    		Product product = output.get(style);
 		                    	if(product == null) {
 		                    		// First variant for product, create and parse product
 		                    		product = new Product();
@@ -241,6 +290,21 @@ public class WinRetailParser {
 		                    		// Set product attributes
 		                    		product.setBodyHtml(winRetailDatabaseRow.get(WINRETAIL_HEADLINE_HEADER));
 		                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_SUBCLASS_HEADER));
+		                    		if(product.getProductType() == null || "".equals(product.getProductType())) {
+			                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_CLASS_HEADER));
+			                    		if(product.getProductType() == null || "".equals(product.getProductType())) {
+				                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_DEPT_HEADER));
+			                    		}
+		                    		}
+
+		                    		if(winRetailDatabaseRow.get(WINRETAIL_SEASON_HEADER) != null) {
+		                    			product.getMetafields().add(
+		                    					new Metafield(metafieldNamespace,
+		                    							PRODUCT_SEASON_METAFIELD_KEY,
+		                    							Metafield.SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE,
+		                    							winRetailDatabaseRow.get(WINRETAIL_SEASON_HEADER)));
+		                    		}
+
 		                    		product.setTitle(winRetailDatabaseRow.get(WINRETAIL_DESCRIPTION_HEADER));
 		                    		product.setVendor(winRetailDatabaseRow.get(WINRETAIL_VENDOR_HEADER));
 
@@ -253,32 +317,35 @@ public class WinRetailParser {
 		                    		File originalProductImageFile = photoMap.get(variantImageFilePath.toUpperCase().toLowerCase());
 		                    		if(originalProductImageFile != null && originalProductImageFile.isFile()) {
 
-		                    			// Check if image is sane
-		                    			BufferedImage productOriginalImage;
-		                    			try {
-			                    			productOriginalImage = ImageIO.read(originalProductImageFile);
-		                    			} catch(Exception e) {
-			                    			// There must be a picture for every variant AND product
-			                    			// Otherwise : on to the next one
-			                    			System.out.println("Invalid product image : " + originalProductImageFile.getName());
-			                    			continue;
-		                    			}
-		                    			
-		                    			// Prepare BW image
-		                    			BufferedImage productImage = new BufferedImage(productOriginalImage.getWidth(), productOriginalImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);  
-		                    			Graphics g = productImage.getGraphics();  
-		                    			g.drawImage(productOriginalImage, 0, 0, null);  
-		                    			g.dispose();
-		                    			
-		                    			// Write image
-		                    			File productImageFile = new File(getProductImageFilePathFromDatabaseRow(winRetailDatabaseRow, photoFolder));
-		                    			ImageIO.write(productImage, PRODUCT_IMAGE_FORMAT, productImageFile);
+		                    			if(IMAGE_PROCESSING_ENABLED) {
+			                    			// Check if image is sane
+			                    			BufferedImage productOriginalImage;
+			                    			try {
+				                    			productOriginalImage = ImageIO.read(originalProductImageFile);
+			                    			} catch(Exception e) {
+				                    			// There must be a picture for every variant AND product
+				                    			// Otherwise : on to the next one
+				                    			System.out.println("Invalid product image : " + originalProductImageFile.getName());
+				                    			continue;
+			                    			}
+			                    			
+			                    			// Prepare BW image
+			                    			BufferedImage productImage = new BufferedImage(productOriginalImage.getWidth(), 
+			                    					productOriginalImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);  
+			                    			Graphics g = productImage.getGraphics();  
+			                    			g.drawImage(productOriginalImage, 0, 0, null);  
+			                    			g.dispose();
+			                    			
+			                    			// Write image
+			                    			File productImageFile = new File(getProductImageFilePathFromDatabaseRow(winRetailDatabaseRow, photoFolder));
+			                    			ImageIO.write(productImage, PRODUCT_IMAGE_FORMAT, productImageFile);
 
-		                    			// Add image name to product image list
-		                    			product.getImageNames().add(productImageFile.getName());
+			                    			// Add image name to product image list
+			                    			product.getImageNames().add(productImageFile.getName());
+		                    			}
 	
 		                    			// register product
-		                    			winRetailProductDatabase.put(style, product);
+		                    			output.put(style, product);
 		                    		} else {
 		                    			// There must be a picture for every variant AND product
 		                    			// Otherwise : on to the next one
@@ -298,6 +365,18 @@ public class WinRetailParser {
 		                    	variant.setOption2(winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER));
 		                    	variant.setPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_DISCOUNTED_PRICE_HEADER)));
 		                    	variant.setSku(winRetailDatabaseRow.get(WINRETAIL_UPC_HEADER));
+		                    	
+		                    	if(winRetailDatabaseRow.get(WINRETAIL_COLOR_RGB_HEX_HEADER) != null) {
+		                    		variant.getMetafields().add(
+	                    					new Metafield(metafieldNamespace,
+	                    							VARIANT_RGB_COLOR_COORD_METAFIELD_KEY,
+	                    							Metafield.SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE,
+	                    							winRetailDatabaseRow.get(WINRETAIL_COLOR_RGB_HEX_HEADER)));
+	                    		}
+
+		                    	if(winRetailDatabaseRow.get(WINRETAIL_ITEM_WEIGHT_HEADER) != null) 
+		                    		variant.setGrams(Double.parseDouble(winRetailDatabaseRow.get(WINRETAIL_ITEM_WEIGHT_HEADER)));
+		                    	
 
 		                    	// Check for mandatory variant picture
 	                    		String variantImageFileName = getVariantImageFileNameFromDatabaseRow(winRetailDatabaseRow);
@@ -309,26 +388,29 @@ public class WinRetailParser {
 	                    			
 	                    		} else {
 		                    		if(originalVariantImageFile != null && originalVariantImageFile.isFile()) {
-		                    			// Product has no picture registered for this color
-		                    			// Check if variant image is sane
-		                    			try {
-		                    				ImageIO.read(originalVariantImageFile);
-		                    			} catch(Exception e) {
-			                    			// There must be a picture for every variant AND product
-			                    			// Otherwise : on to the next one
-			                    			System.out.println("Invalid variant image : " + originalVariantImageFile.getName());
-			                    			continue;
+		                    			
+		                    			if(IMAGE_PROCESSING_ENABLED) {
+			                    			// Product has no picture registered for this color
+			                    			// Check if variant image is sane
+			                    			try {
+			                    				ImageIO.read(originalVariantImageFile);
+			                    			} catch(Exception e) {
+				                    			// There must be a picture for every variant AND product
+				                    			// Otherwise : on to the next one
+				                    			System.out.println("Invalid variant image : " + originalVariantImageFile.getName());
+				                    			continue;
+			                    			}
+	
+			                    			// Add image name to product image list
+			                    			product.getImageNames().add(originalVariantImageFile.getName());
 		                    			}
-
-		                    			// Add image name to product image list
-		                    			product.getImageNames().add(originalVariantImageFile.getName());
 
 		                    			// register variant
 				                    	product.getVariants().add(variant);
 		                    		} else {
 		                    			// There must be a picture for every variant AND product
 		                    			// Otherwise : on to the next one
-		                    			System.out.println("Expected product variant not found : " + variantImageFileName);
+		                    			System.out.println("Expected variant image not found : " + variantImageFileName);
 		                    			continue;
 		                    		}
 	                    			
@@ -340,24 +422,8 @@ public class WinRetailParser {
                 }
             }
         }
-        System.out.println("Successfuly parsed WinRetail database. Found " + winRetailProductDatabase.size() + " products in database, for an average of " + 
-        		String.valueOf(variantCount / winRetailProductDatabase.size()) + " variation(s) per product…");
-
-        System.out.println("Outputting CSV File…");
-        CSVWriter.writeCSV(databaseFile.getParentFile(), databaseFile.getName().replace("xls", "csv"), PRODUCT_IMAGE_WEB_PREFIX, winRetailProductDatabase.values());
-
-//		// Testing Shopify connection
-//		String shopifyApiKey = args[2];
-//		String shopifyPassword = args[3];
-//		String shopifyStoreHandle = args[4];
-	}
-
-	public static String getProductImageFilePathFromDatabaseRow(Map<String, String> winRetailDatabaseRow, File photoFolder) {
-		StringBuffer sb = new StringBuffer();
-		return sb.append(photoFolder.getAbsolutePath()).append(File.separator).append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append(".jpg").toString();
-	}
-	public static String getVariantImageFileNameFromDatabaseRow(Map<String, String> winRetailDatabaseRow) {
-		StringBuffer sb = new StringBuffer();
-		return sb.append(winRetailDatabaseRow.get(WINRETAIL_STYLE_HEADER)).append("~").append(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER)).append(".jpg").toString();
+        System.out.println("Successfuly parsed WinRetail database. Found " + output.size() + " products in database, for an average of " + 
+        		String.valueOf(variantCount / output.size()) + " variation(s) per product…");
+		return output;
 	}
 }

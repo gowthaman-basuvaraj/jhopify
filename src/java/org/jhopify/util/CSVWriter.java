@@ -139,11 +139,15 @@ public class CSVWriter {
 		 writer.write(variant.getSku());
 		 
 		 // Weight
-		 writer.write("");
-		 
+		 if(variant.getGrams() != null) writer.write(variant.getGrams().toString());
+		 else writer.write("");
+
 		 // Trailing fields
 		 writer.write(variant.getInventoryManagement());
-		 writer.write(String.valueOf(variant.getInventoryQuantity()));
+	
+		 if(variant.getInventoryQuantity() != null) writer.write(String.valueOf(variant.getInventoryQuantity()));
+		 else writer.write("0");
+
 		 writer.write(variant.getInventoryPolicy());
 		 writer.write(variant.getFullfilmentService());
 		 writer.write(String.valueOf(variant.getPrice()));

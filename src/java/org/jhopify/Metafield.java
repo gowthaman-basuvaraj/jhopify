@@ -1,5 +1,9 @@
 package org.jhopify;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement(name="metafield")
 public class Metafield {
 	public final static String SHOPIFY_API_METAFIELD_TYPE_INTEGER_VALUE = "integer";
 	public final static String SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE = "string";
@@ -11,7 +15,18 @@ public class Metafield {
 	String value;
 	String valueType;
 
-	
+
+	public Metafield() {
+		super();
+	}
+	public Metafield(String namespace, String key, String valueType, String value) {
+		super();
+		this.namespace = namespace;
+		this.key = key;
+		this.valueType = valueType;
+		this.value = value;
+	}
+
 	/**
 	 * @return the id
 	 */
@@ -75,6 +90,7 @@ public class Metafield {
 	/**
 	 * @return the valueType
 	 */
+	@XmlElement(name = "value-type")
 	public String getValueType() {
 		return valueType;
 	}

@@ -29,6 +29,7 @@ public class ProductVariant {
 	String sku;
 	Boolean requiresShipping = true;
 	Boolean taxable = true;
+	Double grams;
 	List<Metafield> metafields = new ArrayList<Metafield>();
 
 	/**
@@ -228,5 +229,17 @@ public class ProductVariant {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+	/**
+	 * @return the grams
+	 */
+	public Double getGrams() {
+		return grams;
+	}
+	/**
+	 * @param grams the grams to set
+	 */
+	public void setGrams(Double grams) {
+		this.grams = grams;
 	}
 }
