@@ -30,6 +30,7 @@ public class ProductVariant {
 	Boolean requiresShipping = true;
 	Boolean taxable = true;
 	Double grams;
+
 	List<Metafield> metafields = new ArrayList<Metafield>();
 
 	/**

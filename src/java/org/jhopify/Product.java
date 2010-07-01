@@ -9,23 +9,29 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import org.apache.solr.client.solrj.beans.Field;
+
 @XmlRootElement(name="product")
 public class Product {
 	
-	String id;
+	@Field String id;
 	Date publishedAt;
-	String handle;
-	String productType;
-	String vendor;
-	String title;
-	String tags;
-	String bodyHtml;
-	List<String> imageNames = new ArrayList<String>();
+
+
+	@Field String handle;
+	@Field String productType;
+	@Field String vendor;
+	@Field String title;
+	@Field String tags;
+	@Field String bodyHtml;
+
+	@Field List<String> imageNames = new ArrayList<String>();
+
 	List<ProductOption> options = new ArrayList<ProductOption>();
 	List<ProductVariant> variants = new ArrayList<ProductVariant>();
 	List<Metafield> metafields = new ArrayList<Metafield>();
+	List<ProductImage> images = new ArrayList<ProductImage>();
 
-	
 	/**
 	 * @return the publishedAt
 	 */
@@ -177,4 +183,43 @@ public class Product {
 	public void setImageNames(List<String> imageNames) {
 		this.imageNames = imageNames;
 	}
+	/**
+	 * @return the images
+	 */
+	@XmlElementWrapper( name="images" )
+	@XmlElement( name="image" )
+	public List<ProductImage> getImages() {
+		return images;
+	}
+	/**
+	 * @param images the images to set
+	 */
+	public void setImages(List<ProductImage> images) {
+		this.images = images;
+	}
+	
+
+	/**********************************
+	* Solr Multivalued Field Wrappers *
+	***********************************/
+	@Field("metafieldName") public void setMetafieldNames(List<String> names) {}
+	@Field("metafieldName") public List<String> getMetafieldNames() {
+		List<String> output = new ArrayList<String>();
+		return output;
+	}
+
+	@Field("metafieldValue") public void setMetafieldValues(List<String> names) {}
+
+	@Field("imageURL") public void setImageURLs(List<String> urls) {}
+
+	@Field("variantId") public void setVariantIds(List<String> ids) {}
+	@Field("variantTitle") public void setVariantTitles(List<String> titles) {}
+	@Field("variantPosition") public void setVariantPositions(List<Integer> positions) {}
+	@Field("variantPrice") public void setVariantPrices(List<Float> prices) {}
+	@Field("variantPrice") public void setVariantCompareAtPrices(List<Float> prices) {}
+	@Field("variantInventoryQuantity") public void setVariantInventoryQuantities(List<Float> quantities) {}
+	@Field("variantOption1Value") public void setVariantOption1Values(List<String> values) {}
+	@Field("variantOption2Value") public void setVariantOption2Values(List<String> values) {}
+	@Field("variantOption3Value") public void setVariantOption3Values(List<String> values) {}
+	@Field("variantSKU") public void setVariantSKUs(List<String> skus) {}
 }
