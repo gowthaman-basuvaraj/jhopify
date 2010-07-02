@@ -1,13 +1,18 @@
 <?xml version="1.0" ?>
 <schema name="English Jhopify Schema" version="1.0">
 	<types>
-		<fieldtype name="string"	class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-		<fieldtype name="tags"  	class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-		<fieldtype name="html"  	class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-		<fieldtype name="integer"  	class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+		<fieldtype name="string"	class="solr.StrField" 		sortMissingLast="true" omitNorms="true"/>
+		<fieldtype name="tags"  	class="solr.StrField" 		sortMissingLast="true" omitNorms="true">
+			<analyzer>
+				<tokenizer class="solr.PatternTokenizerFactory" pattern=", *" />
+			</analyzer>
+		</fieldtype>
+		<fieldtype name="html"  	class="solr.StrField" 		sortMissingLast="true" omitNorms="true"/>
+		<fieldtype name="integer"  	class="solr.StrField" 		sortMissingLast="true" omitNorms="true"/>
 		<fieldtype name="money"  	class="solr.TrieFloatField" sortMissingLast="true" omitNorms="true" precisionStep="8" positionIncrementGap="0"/>
-		<fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+		<fieldtype name="text" 		class="solr.TextField" 		positionIncrementGap="100">
 			<analyzer type="index">
+				<charFilter class="solr.HTMLStripCharFilterFactory"/>
 				<charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
 			  	<tokenizer class="solr.WhitespaceTokenizerFactory"/>
 				<!-- Case insensitive stop word removal.
@@ -30,7 +35,7 @@
 				<filter class="solr.LowerCaseFilterFactory"/>
 				<filter class="solr.SnowballPorterFilterFactory" language="English"/>
 			</analyzer>
-      </fieldType>
+      </fieldtype>
 	</types>
 
 	<fields>
@@ -41,8 +46,7 @@
 		<field name="vendor"      					type="string"   indexed="true"  stored="true"  multiValued="false" required="false"/>
 		<field name="title"      					type="string"   indexed="true"  stored="true"  multiValued="false" required="false"/>
 		<field name="tags"      					type="tags"   	indexed="true"  stored="true"  multiValued="false" required="false"/>
-		<field name="bodyHtml"      				type="string"   indexed="false" stored="true"  multiValued="false" required="false"/>
-		<field name="body"      					type="text"   	indexed="true" 	stored="false" multiValued="false" required="false"/>
+		<field name="bodyHtml"      				type="text"   	indexed="true" 	stored="true"  multiValued="false" required="false"/>
 
 		<field name="imageName"      				type="string"   indexed="false" stored="true"  multiValued="true"  required="false"/>
 		<field name="metafieldKey"      			type="string"   indexed="false" stored="true"  multiValued="true"  required="false"/>
@@ -81,7 +85,6 @@
  	<copyField source="title" dest="text"/>
  	<copyField source="tags" dest="text"/>
  	<copyField source="bodyHtml" dest="text"/>
- 	<copyField source="body" dest="text"/>
  	<copyField source="metafieldValue" dest="text"/>
  	<copyField source="variantTitle" dest="text"/>
  	<copyField source="variantOption1Value" dest="text"/>

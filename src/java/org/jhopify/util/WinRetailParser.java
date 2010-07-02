@@ -44,7 +44,7 @@ public class WinRetailParser {
 	
 	
 	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
-	static final String SOLR_DEFAULT_HOST = "http://index.petiteboite.ca/";
+	static final String SOLR_DEFAULT_HOST_NAME = "index.petiteboite.ca";
 	static final String SOLR_DEFAULT_WEBAPP = "solr";
 	static final Integer SOLR_DEFAULT_PORT = 8983;
 	
@@ -152,7 +152,7 @@ public class WinRetailParser {
 
 	        if(SOLR_INDEXING_ENABLED) {
 	        	DataMerger.mergeFromAPIIntoDatabase(true, true, true, true, false, productsFromAPI, winRetailProductDatabase);
-	        	SolrFacade.addAllProducts(winRetailProductDatabase, SOLR_DEFAULT_HOST, SOLR_DEFAULT_PORT, SOLR_DEFAULT_WEBAPP, shopifyStoreHandle);
+	        	SolrFacade.addAllProducts(winRetailProductDatabase, SOLR_DEFAULT_HOST_NAME, 80, SOLR_DEFAULT_WEBAPP, shopifyStoreHandle);
 	        }
 		}
 	}

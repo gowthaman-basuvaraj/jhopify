@@ -9,7 +9,6 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.client.solrj.beans.Field;
 import org.jhopify.solr.SolrFacade;
 
@@ -209,30 +208,6 @@ public class Product {
 	
 	
 	
-	/******************************
-	* Solr Escaped Field Wrappers *
-	*******************************
-	* JSolr bogusly expects the   *
-	* annotation to be on setters *
-	* we made setters that do     *
-	* nothing                     *
-	******************************/
-	@Field("body") public void setBody(String body) {}
-	public String getBody() {
-		String output = getBodyHtml();
-		if(output == null) {
-			// Do nothing.
-		} else {
-			output = StringEscapeUtils.unescapeHtml(output);
-			output = output.replaceAll("\\<.*?\\>", "");
-		}
-		return output;
-	}
-	
-	
-	
-	
-	
 	
 	
 	
@@ -247,7 +222,7 @@ public class Product {
 
 	
 	@Field("metafieldKey") public void setMetafieldKeys(List<String> key) {}
-	public List<String> getMetafieldNames() {
+	public List<String> getMetafieldKeys() {
 		List<String> output = new ArrayList<String>();
 		for(Metafield metafield : getMetafields()) {
 			String key = metafield.getKey();
@@ -264,7 +239,7 @@ public class Product {
 	public List<String> getMetafieldValues() {
 		List<String> output = new ArrayList<String>();
 		for(Metafield metafield : getMetafields()) {
-			String value = metafield.getKey();
+			String value = metafield.getValue();
 			if(value == null) {
 				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
