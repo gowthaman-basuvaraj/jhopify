@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.client.solrj.beans.Field;
 import org.jhopify.solr.SolrFacade;
 
@@ -17,7 +18,7 @@ public class Product {
 	
 	@Field String id;
 
-	@Field Date publishedAt;
+	Date publishedAt;
 
 
 	@Field String handle;
@@ -27,7 +28,7 @@ public class Product {
 	@Field String tags;
 	@Field String bodyHtml;
 
-	@Field List<String> imageNames = new ArrayList<String>();
+	@Field("imageName") List<String> imageNames = new ArrayList<String>();
 
 	List<ProductOption> options = new ArrayList<ProductOption>();
 	List<ProductVariant> variants = new ArrayList<ProductVariant>();
@@ -208,6 +209,26 @@ public class Product {
 	
 	
 	
+	/******************************
+	* Solr Escaped Field Wrappers *
+	*******************************
+	* JSolr bogusly expects the   *
+	* annotation to be on setters *
+	* we made setters that do     *
+	* nothing                     *
+	******************************/
+	@Field("body") public void setBody(String body) {}
+	public String getBody() {
+		String output = getBodyHtml();
+		if(output == null) {
+			// Do nothing.
+		} else {
+			output = StringEscapeUtils.unescapeHtml(output);
+			output = output.replaceAll("\\<.*?\\>", "");
+		}
+		return output;
+	}
+	
 	
 	
 	
@@ -323,7 +344,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantPrice") public void setVariantCompareAtPrices(List<Float> prices) {}
+	@Field("variantCompareAtPrice") public void setVariantCompareAtPrices(List<Float> prices) {}
 	public List<Float> getVariantCompareAtPrices() {
 		List<Float> output = new ArrayList<Float>();
 		for(ProductVariant variant : getVariants()) {

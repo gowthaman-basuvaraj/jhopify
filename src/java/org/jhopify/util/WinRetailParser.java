@@ -24,11 +24,13 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.jhopify.Metafield;
 import org.jhopify.Product;
 import org.jhopify.ProductOption;
 import org.jhopify.ProductVariant;
 import org.jhopify.api.ProductAPI;
+import org.jhopify.solr.SolrFacade;
 
 
 // TODO FR, EN
@@ -37,10 +39,16 @@ import org.jhopify.api.ProductAPI;
 public class WinRetailParser {
 	static final boolean IMAGE_PROCESSING_ENABLED = false;
 	static final boolean CSV_OUTPUT_ENABLED = false;
-	static final boolean METAFIELD_POSTING_ENABLED = true;
+	static final boolean METAFIELD_POSTING_ENABLED = false;
+	static final boolean SOLR_INDEXING_ENABLED = true;
+	
+	
+	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
+	static final String SOLR_DEFAULT_HOST = "http://index.petiteboite.ca/";
+	static final String SOLR_DEFAULT_WEBAPP = "solr";
+	static final Integer SOLR_DEFAULT_PORT = 8983;
 	
 	static final String PRODUCT_IMAGE_FORMAT = "jpg";
-	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
 	static final String PRODUCT_SEASON_METAFIELD_KEY = "season";
 	static final String VARIANT_RGB_COLOR_COORD_METAFIELD_KEY = "RGBColor";
 
@@ -101,7 +109,7 @@ public class WinRetailParser {
 	}
 
 	
-	public static void main(String[] args) throws InvalidFormatException, IOException, IllegalStateException, JAXBException, URISyntaxException {
+	public static void main(String[] args) throws InvalidFormatException, IOException, IllegalStateException, JAXBException, URISyntaxException, SolrServerException {
 		// Argument check
 		if(args.length < 6) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory :" +
 				" databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle metafieldNamespace.");
@@ -129,15 +137,24 @@ public class WinRetailParser {
             CSVWriter.writeCSV(databaseFile.getParentFile(), databaseFile.getName().replace("xls", "csv"), PRODUCT_IMAGE_WEB_PREFIX, winRetailProductDatabase.values());
         }
 
-		// Testing Shopify connection
-		String shopifyApiKey = args[2];
-		String shopifyPassword = args[3];
-		String shopifyStoreHandle = args[4];
-	
-        if(METAFIELD_POSTING_ENABLED) {
-            List<Product> productsFromAPI = ProductAPI.getProductListFromAPI(shopifyApiKey, shopifyPassword, shopifyStoreHandle);
-            ProductAPI.addAllMetafields(shopifyApiKey, shopifyPassword, shopifyStoreHandle, productsFromAPI, winRetailProductDatabase);
-        }
+
+		if(METAFIELD_POSTING_ENABLED | SOLR_INDEXING_ENABLED) {
+			// Testing Shopify connection
+			String shopifyApiKey = args[2];
+			String shopifyPassword = args[3];
+			String shopifyStoreHandle = args[4];
+			
+			List<Product> productsFromAPI = ProductAPI.getProductListFromAPI(shopifyApiKey, shopifyPassword, shopifyStoreHandle);
+			
+	        if(METAFIELD_POSTING_ENABLED) {
+	            ProductAPI.addAllMetafields(shopifyApiKey, shopifyPassword, shopifyStoreHandle, productsFromAPI, winRetailProductDatabase);
+	        }
+
+	        if(SOLR_INDEXING_ENABLED) {
+	        	DataMerger.mergeFromAPIIntoDatabase(true, true, true, true, false, productsFromAPI, winRetailProductDatabase);
+	        	SolrFacade.addAllProducts(winRetailProductDatabase, SOLR_DEFAULT_HOST, SOLR_DEFAULT_PORT, SOLR_DEFAULT_WEBAPP, shopifyStoreHandle);
+	        }
+		}
 	}
 
 	public static String getProductImageFilePathFromDatabaseRow(Map<String, String> winRetailDatabaseRow, File photoFolder) {
