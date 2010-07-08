@@ -3,6 +3,7 @@ package org.jhopify;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
@@ -205,9 +206,52 @@ public class Product {
 	
 	
 	
-	
-	
-	
+	/*
+	 * Tag management methods
+	 */
+	List<String> getTagList() {
+		ArrayList<String> output = new ArrayList<String>();
+		if(getTags() != null) {
+			StringTokenizer st = new StringTokenizer(getTags(), ",");
+			while(st.hasMoreTokens()) {
+				output.add(st.nextToken().trim());
+			}
+		}
+		return output;
+	}
+	void setTaglist(List<String> tagList) {
+		StringBuffer sb = new StringBuffer();
+		for(String tag : tagList) {
+			if(sb.length() > 0) sb.append(", ");
+			sb.append(tag);
+		}
+		setTags(sb.toString());
+	}
+	public void addTag(String tag) {
+		if(tag != null) {
+			List<String> tagList = getTagList();
+			if(!tagList.contains(tag)) {
+				tagList.add(tag);
+			}
+			setTaglist(tagList);
+		}
+	}
+	public String addTags(String tags, String delimiter) {
+		String output = null;
+		if(tags != null) {
+			StringTokenizer st = new StringTokenizer(tags, delimiter);
+			List<String> tagList = getTagList();
+			while(st.hasMoreTokens()) {
+				String tag = st.nextToken().trim();
+				if(!tagList.contains(tag)) {
+					tagList.add(tag);
+					output = tag;
+				}
+			}
+			setTaglist(tagList);
+		}
+		return output;
+	}
 	
 	
 	
@@ -219,6 +263,21 @@ public class Product {
 	* annotation to be on setters     *
 	* we made setters that do nothing *
 	**********************************/
+
+	
+	@Field("optionName") public void setOptionNames(List<String> names) {}
+	public List<String> getOptionNames() {
+		List<String> output = new ArrayList<String>();
+		for(ProductOption option : getOptions()) {
+			String name = option.getName();
+			if(name == null) {
+				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+			} else {
+				output.add(name);
+			}
+		}
+		return output;
+	}
 
 	
 	@Field("metafieldKey") public void setMetafieldKeys(List<String> key) {}
@@ -410,6 +469,7 @@ public class Product {
 			String key = null;
 			for(Metafield metafield : variant.getMetafields()) {
 				key = metafield.getKey();
+				break;
 			}
 			if(key == null) {
 				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
@@ -424,11 +484,15 @@ public class Product {
 	public List<String> getVariantFirstMetafieldValues() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
-			String id = variant.getId();
-			if(id == null) {
+			String value = null;
+			for(Metafield metafield : variant.getMetafields()) {
+				value = metafield.getValue();
+				break;
+			}
+			if(value == null) {
 				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
-				output.add(id);
+				output.add(value);
 			}
 		}
 		return output;

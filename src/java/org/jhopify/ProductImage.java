@@ -40,4 +40,11 @@ public class ProductImage {
 	public void setPosition(Integer position) {
 		this.position = position;
 	}
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "ProductImage [id=" + id + ", position=" + position + ", src=" + src + "]";
+	}
 }

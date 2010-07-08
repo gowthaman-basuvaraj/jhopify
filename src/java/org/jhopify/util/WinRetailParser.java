@@ -5,7 +5,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -14,7 +13,6 @@ import java.util.TreeMap;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
-import javax.xml.bind.JAXBException;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -24,13 +22,10 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.jhopify.Metafield;
 import org.jhopify.Product;
 import org.jhopify.ProductOption;
 import org.jhopify.ProductVariant;
-import org.jhopify.api.ProductAPI;
-import org.jhopify.solr.SolrFacade;
 
 
 // TODO FR, EN
@@ -38,14 +33,11 @@ import org.jhopify.solr.SolrFacade;
 // TODO Use enum for constants headers
 public class WinRetailParser {
 	static final boolean IMAGE_PROCESSING_ENABLED = false;
-	static final boolean CSV_OUTPUT_ENABLED = false;
-	static final boolean METAFIELD_POSTING_ENABLED = false;
-	static final boolean SOLR_INDEXING_ENABLED = true;
 	
 	
-	static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
-	static final String SOLR_DEFAULT_HOST_NAME = "index.petiteboite.ca";
-	static final String SOLR_DEFAULT_WEBAPP = "solr";
+	public static final String PRODUCT_IMAGE_WEB_PREFIX = "http://static.petiteboite.ca/images/2010-06-22/";
+	public static final String SOLR_DEFAULT_HOST_NAME = "index.petiteboite.ca";
+	public static final String SOLR_DEFAULT_WEBAPP = "solr";
 	static final Integer SOLR_DEFAULT_PORT = 8983;
 	
 	static final String PRODUCT_IMAGE_FORMAT = "jpg";
@@ -64,9 +56,6 @@ public class WinRetailParser {
 	static final String WINRETAIL_SEASON_HEADER = "Season";
 	static final String WINRETAIL_COLOR_NAME_HEADER = "Color Long Name";
 	static final String WINRETAIL_COLOR_RGB_HEX_HEADER = "Color_RGB";
-	static final String WINRETAIL_DEPT_HEADER = "Dept";
-	static final String WINRETAIL_CLASS_HEADER = "Class";
-	static final String WINRETAIL_SUBCLASS_HEADER = "Subclass";
 	static final String WINRETAIL_CAPTION_HEADER = "Caption";
 	static final String WINRETAIL_ALT_CAPTION_HEADER = "Alt Caption";
 	static final String WINRETAIL_HEADLINE_HEADER = "Headline";
@@ -74,6 +63,17 @@ public class WinRetailParser {
 	static final String WINRETAIL_DESCRIPTION_HEADER = "Description";
 	static final String WINRETAIL_TICKET_DESCRIPTION_HEADER = "Ticket Description";
 	static final String WINRETAIL_ITEM_WEIGHT_HEADER = "Item Weight";
+
+
+	
+	static final String WINRETAIL_CAT1_HEADER = "Dept";
+	static final String WINRETAIL_CAT2_HEADER = "Class";
+	static final String WINRETAIL_CAT3_HEADER = "Subclass";
+	static final String WINRETAIL_TAGS1_HEADER = "Nav1";
+	static final String WINRETAIL_TAGS2_HEADER = "Nav2";
+	static final String WINRETAIL_TAGS3_HEADER = "Nav3";
+	static final String WINRETAIL_TAG_SEPARATOR = ":";
+	static final String WINRETAIL_NULL_TAG_VALUE_HEADER = "NULL";
 
 	static final ProductOption colorOption = new ProductOption();
 	static final ProductOption sizeOption = new ProductOption();
@@ -96,9 +96,12 @@ public class WinRetailParser {
 		mandatoryColumns.add(WINRETAIL_SEASON_HEADER);
 		mandatoryColumns.add(WINRETAIL_COLOR_NAME_HEADER);
 		mandatoryColumns.add(WINRETAIL_COLOR_RGB_HEX_HEADER);
-		mandatoryColumns.add(WINRETAIL_DEPT_HEADER);
-		mandatoryColumns.add(WINRETAIL_CLASS_HEADER);
-		mandatoryColumns.add(WINRETAIL_SUBCLASS_HEADER);
+		mandatoryColumns.add(WINRETAIL_CAT1_HEADER);
+		mandatoryColumns.add(WINRETAIL_CAT2_HEADER);
+		mandatoryColumns.add(WINRETAIL_CAT3_HEADER);
+		mandatoryColumns.add(WINRETAIL_TAGS1_HEADER);
+		mandatoryColumns.add(WINRETAIL_TAGS2_HEADER);
+		mandatoryColumns.add(WINRETAIL_TAGS3_HEADER);
 		mandatoryColumns.add(WINRETAIL_CAPTION_HEADER);
 		mandatoryColumns.add(WINRETAIL_ALT_CAPTION_HEADER);
 		mandatoryColumns.add(WINRETAIL_HEADLINE_HEADER);
@@ -108,54 +111,6 @@ public class WinRetailParser {
 		mandatoryColumns.add(WINRETAIL_ITEM_WEIGHT_HEADER);
 	}
 
-	
-	public static void main(String[] args) throws InvalidFormatException, IOException, IllegalStateException, JAXBException, URISyntaxException, SolrServerException {
-		// Argument check
-		if(args.length < 6) throw new IllegalArgumentException("Not enough arguments. All 5 arguments are mandatory :" +
-				" databasePath photoFolderPath shopifyApiKey shopifyPassword shopifyStoreHandle metafieldNamespace.");
-		else System.out.println("All arguments OK…");
-
-		// Checking photo library
-		String photoFolderPath = args[1];
-		File photoFolder = new File(photoFolderPath);
-		if(!photoFolder.isDirectory()) throw new IllegalArgumentException("Halting. The specified photo folder does not exist or is not a directory.");
-		else System.out.println("Picture directory found…");
-
-		// Checking database
-		String databasePath = args[0];
-		File databaseFile = new File(databasePath);
-		if(!databaseFile.isFile()) throw new IllegalArgumentException("Halting. The specified database file does not exist or is not a file.");
-		else System.out.println("Database found…");
-		
-
-    	// Prepare product database
-		String metafieldNamespace = args[5];
-    	Map<String, Product> winRetailProductDatabase = parseProductDatabase(databaseFile, photoFolder, metafieldNamespace);
-
-        if(CSV_OUTPUT_ENABLED) {
-            System.out.println("Outputting CSV File…");
-            CSVWriter.writeCSV(databaseFile.getParentFile(), databaseFile.getName().replace("xls", "csv"), PRODUCT_IMAGE_WEB_PREFIX, winRetailProductDatabase.values());
-        }
-
-
-		if(METAFIELD_POSTING_ENABLED | SOLR_INDEXING_ENABLED) {
-			// Testing Shopify connection
-			String shopifyApiKey = args[2];
-			String shopifyPassword = args[3];
-			String shopifyStoreHandle = args[4];
-			
-			List<Product> productsFromAPI = ProductAPI.getProductListFromAPI(shopifyApiKey, shopifyPassword, shopifyStoreHandle);
-			
-	        if(METAFIELD_POSTING_ENABLED) {
-	            ProductAPI.addAllMetafields(shopifyApiKey, shopifyPassword, shopifyStoreHandle, productsFromAPI, winRetailProductDatabase);
-	        }
-
-	        if(SOLR_INDEXING_ENABLED) {
-	        	DataMerger.mergeFromAPIIntoDatabase(true, true, true, true, false, productsFromAPI, winRetailProductDatabase);
-	        	SolrFacade.addAllProducts(winRetailProductDatabase, SOLR_DEFAULT_HOST_NAME, 80, SOLR_DEFAULT_WEBAPP, shopifyStoreHandle);
-	        }
-		}
-	}
 
 	public static String getProductImageFilePathFromDatabaseRow(Map<String, String> winRetailDatabaseRow, File photoFolder) {
 		StringBuffer sb = new StringBuffer();
@@ -286,7 +241,9 @@ public class WinRetailParser {
 			                            // Check if column is known as required value
 			                            if(cellValue != null) {
 			                            	cellValue = cellValue.trim();
-			                            	winRetailDatabaseRow.put(columnName, cellValue);
+			                            	if(!"".equals(cellValue)) {
+				                            	winRetailDatabaseRow.put(columnName, cellValue);
+			                            	}
 			                            }
 		                        	}
 	                    		}
@@ -304,16 +261,44 @@ public class WinRetailParser {
 		                    		product = new Product();
 		                    		product.setHandle(style);
 
-		                    		// Set product attributes
+		                    		// Set product type & tags
 		                    		product.setBodyHtml(winRetailDatabaseRow.get(WINRETAIL_HEADLINE_HEADER));
-		                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_SUBCLASS_HEADER));
-		                    		if(product.getProductType() == null || "".equals(product.getProductType())) {
-			                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_CLASS_HEADER));
-			                    		if(product.getProductType() == null || "".equals(product.getProductType())) {
-				                    		product.setProductType(winRetailDatabaseRow.get(WINRETAIL_DEPT_HEADER));
-			                    		}
+		                    		String cat3 = winRetailDatabaseRow.get(WINRETAIL_CAT3_HEADER);
+		                    		if(cat3 != null && !WINRETAIL_NULL_TAG_VALUE_HEADER.equals(cat3)) {
+	                    				product.setProductType(cat3);
+		                    			product.addTag(cat3);
+		                    		}
+		                    		
+		                    		String cat2 = winRetailDatabaseRow.get(WINRETAIL_CAT2_HEADER);
+		                    		if(cat2 != null && !WINRETAIL_NULL_TAG_VALUE_HEADER.equals(cat2)) {
+	                    				if(product.getProductType() == null) product.setProductType(cat2);
+		                    			product.addTag(cat2);
 		                    		}
 
+		                    		String cat1 = winRetailDatabaseRow.get(WINRETAIL_CAT1_HEADER);
+		                    		if(cat1 != null && !WINRETAIL_NULL_TAG_VALUE_HEADER.equals(cat1)) {
+	                    				if(product.getProductType() == null) product.setProductType(cat1);
+		                    			product.addTag(cat1);
+		                    		}
+
+		                    		// Process tags
+		                    		String tags1 = winRetailDatabaseRow.get(WINRETAIL_TAGS1_HEADER);
+		                    		String tags2 = winRetailDatabaseRow.get(WINRETAIL_TAGS2_HEADER);
+		                    		String tags3 = winRetailDatabaseRow.get(WINRETAIL_TAGS3_HEADER);
+		                    		if(tags1 != null) {
+		                    			String lastTagAdded = product.addTags(tags1, WINRETAIL_TAG_SEPARATOR);
+	                    				if(product.getProductType() == null) product.setProductType(lastTagAdded);
+		                    		}
+		                    		if(tags2 != null) {
+		                    			String lastTagAdded = product.addTags(tags2, WINRETAIL_TAG_SEPARATOR);
+	                    				if(product.getProductType() == null) product.setProductType(lastTagAdded);
+		                    		}
+		                    		if(tags3 != null) {
+		                    			String lastTagAdded = product.addTags(tags3, WINRETAIL_TAG_SEPARATOR);
+	                    				if(product.getProductType() == null) product.setProductType(lastTagAdded);
+		                    		}
+
+		                    		// Process Season Metafield
 		                    		if(winRetailDatabaseRow.get(WINRETAIL_SEASON_HEADER) != null) {
 		                    			product.getMetafields().add(
 		                    					new Metafield(metafieldNamespace,
@@ -321,6 +306,7 @@ public class WinRetailParser {
 		                    							Metafield.SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE,
 		                    							winRetailDatabaseRow.get(WINRETAIL_SEASON_HEADER)));
 		                    		}
+
 
 		                    		product.setTitle(winRetailDatabaseRow.get(WINRETAIL_DESCRIPTION_HEADER));
 		                    		product.setVendor(winRetailDatabaseRow.get(WINRETAIL_VENDOR_HEADER));
@@ -377,9 +363,25 @@ public class WinRetailParser {
 		                    	variant.setCompareAtPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_RETAIL_PRICE_HEADER)));
 		                    	variant.setInventoryManagement(ProductVariant.SHOPIFY_API_INVENTORY_TRACKED_BY_SHOPIFY_VALUE);
 		                    	variant.setInventoryPolicy(ProductVariant.SHOPIFY_API_INVENTORY_POLICY_DENY_VALUE);
-		                    	variant.setInventoryQuantity(Integer.parseInt(winRetailDatabaseRow.get(WINRETAIL_QUANTITY_ON_HAND_HEADER)));
+		
+		                    	
+		                    	
+		                    	// Parse quantity
+		                    	String quantityString = winRetailDatabaseRow.get(WINRETAIL_QUANTITY_ON_HAND_HEADER);
+		                    	if(quantityString != null) {
+		                    		float quantityFloat = Float.parseFloat(quantityString);
+		                    		int quantity = (int) quantityFloat;
+		                    		variant.setInventoryQuantity(quantity);
+		                    	}
+
 		                    	variant.setOption1(winRetailDatabaseRow.get(WINRETAIL_COLOR_NAME_HEADER));
-		                    	variant.setOption2(winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER));
+		                    	
+		                    	// Process size
+		                    	String sizeString = winRetailDatabaseRow.get(WINRETAIL_SIZE_HEADER);
+		                    	if(sizeString != null) {
+		                    		if(sizeString.endsWith(".0")) sizeString = sizeString.substring(0, sizeString.length() - 2);
+			                    	variant.setOption2(sizeString);
+		                    	}
 		                    	variant.setPrice(Float.parseFloat(winRetailDatabaseRow.get(WINRETAIL_DISCOUNTED_PRICE_HEADER)));
 		                    	variant.setSku(winRetailDatabaseRow.get(WINRETAIL_UPC_HEADER));
 		                    	

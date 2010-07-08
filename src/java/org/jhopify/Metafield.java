@@ -100,4 +100,13 @@ public class Metafield {
 	public void setValueType(String valueType) {
 		this.valueType = valueType;
 	}
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Metafield [description=" + description + ", id=" + id
+				+ ", key=" + key + ", namespace=" + namespace + ", value="
+				+ value + ", valueType=" + valueType + "]";
+	}
 }
