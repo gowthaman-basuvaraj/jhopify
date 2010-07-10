@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.Vector;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
@@ -107,6 +108,39 @@ public class Product {
 	 */
 	public void setTitle(String title) {
 		this.title = title;
+	}
+	/**
+	 * @param title the title to set
+	 */
+	public void optimizeAndSetTitle(String title) {
+		// Process title (remove anything from it that is already in the tags)
+	    StringTokenizer st = new StringTokenizer(title);
+	    StringBuffer productTitleStringBuffer = new StringBuffer();
+	    StringBuffer productTypePrefixStringBuffer = new StringBuffer();
+	    Vector<String> addToTagsLater = new Vector<String>();
+	    while (st.hasMoreTokens()) {
+	    	String token = st.nextToken();
+    		boolean wasFoundInTagList = false;
+	    	for(String tag : getTagList()) {
+	    		if(tag.toUpperCase().toLowerCase().contains(token.toUpperCase().toLowerCase())) {
+	    			// If at the beginning of the product title, 
+	    			// add to beginning of product type
+	    			if(productTitleStringBuffer.length() == 0) productTypePrefixStringBuffer.append(token).append(' ');
+	    			wasFoundInTagList = true;
+	    			break;
+	    		}
+	    	}
+	    	if(!wasFoundInTagList) {
+				if(productTitleStringBuffer.length() == 0) productTitleStringBuffer.append(token);
+				else productTitleStringBuffer.append(' ').append(token);
+				if(!addToTagsLater.contains(token)) addToTagsLater.add(token);
+	    	}
+	    }
+	    List<String> tagList = getTagList();
+	    tagList.addAll(addToTagsLater);
+	    setTagList(tagList);
+	    this.productType = productTypePrefixStringBuffer.toString() + productType;
+		this.title = productTitleStringBuffer.toString();
 	}
 	/**
 	 * @return the tags
@@ -219,7 +253,7 @@ public class Product {
 		}
 		return output;
 	}
-	void setTaglist(List<String> tagList) {
+	void setTagList(List<String> tagList) {
 		StringBuffer sb = new StringBuffer();
 		for(String tag : tagList) {
 			if(sb.length() > 0) sb.append(", ");
@@ -233,7 +267,7 @@ public class Product {
 			if(!tagList.contains(tag)) {
 				tagList.add(tag);
 			}
-			setTaglist(tagList);
+			setTagList(tagList);
 		}
 	}
 	public String addTags(String tags, String delimiter) {
@@ -248,7 +282,7 @@ public class Product {
 					output = tag;
 				}
 			}
-			setTaglist(tagList);
+			setTagList(tagList);
 		}
 		return output;
 	}
@@ -279,35 +313,6 @@ public class Product {
 		return output;
 	}
 
-	
-	@Field("metafieldKey") public void setMetafieldKeys(List<String> key) {}
-	public List<String> getMetafieldKeys() {
-		List<String> output = new ArrayList<String>();
-		for(Metafield metafield : getMetafields()) {
-			String key = metafield.getKey();
-			if(key == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
-			} else {
-				output.add(key);
-			}
-		}
-		return output;
-	}
-
-	@Field("metafieldValue") public void setMetafieldValues(List<String> names) {}
-	public List<String> getMetafieldValues() {
-		List<String> output = new ArrayList<String>();
-		for(Metafield metafield : getMetafields()) {
-			String value = metafield.getValue();
-			if(value == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
-			} else {
-				output.add(value);
-			}
-		}
-		return output;
-	}
-
 	@Field("imageSRC") public void setImageSRCs(List<String> urls) {}
 	public List<String> getImageSRCs() {
 		List<String> output = new ArrayList<String>();
@@ -331,20 +336,6 @@ public class Product {
 				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(id);
-			}
-		}
-		return output;
-	}
-
-	@Field("variantTitle") public void setVariantTitles(List<String> titles) {}
-	public List<String> getVariantTitles() {
-		List<String> output = new ArrayList<String>();
-		for(ProductVariant variant : getVariants()) {
-			String title = variant.getTitle();
-			if(title == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
-			} else {
-				output.add(title);
 			}
 		}
 		return output;
@@ -457,42 +448,6 @@ public class Product {
 				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(id);
-			}
-		}
-		return output;
-	}
-
-	@Field("variantFirstMetafieldKey") public void setVariantFirstMetafieldKeys(List<String> keys) {}
-	public List<String> getVariantFirstMetafieldKeys() {
-		List<String> output = new ArrayList<String>();
-		for(ProductVariant variant : getVariants()) {
-			String key = null;
-			for(Metafield metafield : variant.getMetafields()) {
-				key = metafield.getKey();
-				break;
-			}
-			if(key == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
-			} else {
-				output.add(key);
-			}
-		}
-		return output;
-	}
-
-	@Field("variantFirstMetafieldValue") public void setVariantFirstMetafieldValues(List<String> values) {}
-	public List<String> getVariantFirstMetafieldValues() {
-		List<String> output = new ArrayList<String>();
-		for(ProductVariant variant : getVariants()) {
-			String value = null;
-			for(Metafield metafield : variant.getMetafields()) {
-				value = metafield.getValue();
-				break;
-			}
-			if(value == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
-			} else {
-				output.add(value);
 			}
 		}
 		return output;

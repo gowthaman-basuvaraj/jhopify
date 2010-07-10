@@ -36,7 +36,7 @@ public class API {
 	}
 
 	public static void trafficControl(String storeHandle) {
-		TrafficController.geTrafficController(storeHandle).trafficControl();
+		TrafficController.getTrafficController(storeHandle).trafficControl();
 	}
 
 	public static HttpClient getAuthenticatedHttpClient(String key, String password, String hostName) {
@@ -82,12 +82,13 @@ public class API {
 			apiCallsSinceLastReset++;
 		}
 		public void reset() {
+			System.out.println("Resetting API timeout…");
 			this.apiCallsSinceLastReset = 0;
 			Calendar calendar = Calendar.getInstance();
 			calendar.add(Calendar.MINUTE, QUERY_PERIODIC_RESET_IN_MINUTES);
 			this.nextResetTime = calendar.getTimeInMillis();
 		}
-		static public TrafficController geTrafficController(String storeHandle) {
+		static public TrafficController getTrafficController(String storeHandle) {
 			TrafficController output = controllers.get(storeHandle);
 			if(output == null) output = new TrafficController(storeHandle);
 			return output;

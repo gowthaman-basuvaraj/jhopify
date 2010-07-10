@@ -15,7 +15,6 @@ public class ProductVariant {
 	public final static String SHOPIFY_API_PRODUCT_DEFAULT_VALUE = "Default";
 	
 	String id;
-	String title = SHOPIFY_API_PRODUCT_DEFAULT_VALUE;
 	Integer position;
 	Float price;
 	Float compareAtPrice;
@@ -33,18 +32,6 @@ public class ProductVariant {
 
 	List<Metafield> metafields = new ArrayList<Metafield>();
 
-	/**
-	 * @return the title
-	 */
-	public String getTitle() {
-		return title;
-	}
-	/**
-	 * @param title the title to set
-	 */
-	public void setTitle(String title) {
-		this.title = title;
-	}
 	/**
 	 * @return the position
 	 */
