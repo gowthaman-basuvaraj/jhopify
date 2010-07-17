@@ -2,7 +2,6 @@ package org.jhopify.solr;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Vector;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
@@ -30,7 +29,9 @@ public class SolrFacade {
 		
 		// Delete, transform, add (update is not so good)
 		System.out.println("Processing products on solr server : " + url);
-		server.deleteById(new Vector<String>(products.keySet()));
+		// Delete for updated products only with : server.deleteById(new Vector<String>(products.keySet()));
+		// Delete everything with : server.deleteByQuery( "*:*" );
+		server.deleteByQuery( "*:*" );
 		for(Product product : products.values()) {
 			SolrInputDocument inputDocument  = binder.toSolrInputDocument(product);
 			

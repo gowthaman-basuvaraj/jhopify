@@ -118,29 +118,47 @@ public class Product {
 	    StringBuffer productTitleStringBuffer = new StringBuffer();
 	    StringBuffer productTypePrefixStringBuffer = new StringBuffer();
 	    Vector<String> addToTagsLater = new Vector<String>();
-	    while (st.hasMoreTokens()) {
-	    	String token = st.nextToken();
-    		boolean wasFoundInTagList = false;
-	    	for(String tag : getTagList()) {
-	    		if(tag.toUpperCase().toLowerCase().contains(token.toUpperCase().toLowerCase())) {
-	    			// If at the beginning of the product title, 
-	    			// add to beginning of product type
-	    			if(productTitleStringBuffer.length() == 0) productTypePrefixStringBuffer.append(token).append(' ');
-	    			wasFoundInTagList = true;
-	    			break;
-	    		}
+	    String season = null;
+	    for(Metafield metafield : getMetafields()) {
+	    	if("season".equals(metafield.getKey())) {
+	    		season = metafield.getValue();
 	    	}
-	    	if(!wasFoundInTagList) {
+	    }
+	    while (st.hasMoreTokens()) {
+	    	String token = st.nextToken().toUpperCase().toLowerCase();
+    		boolean wasFoundInTagList = false;
+    		boolean wasFoundInSeason = false;
+    		
+    		// Search for token in season first, then, if still not found, in tags
+	    	if(token.length() > 2 && season != null && season.toUpperCase().toLowerCase().contains(token)) {
+		    	// Found in season
+	    		wasFoundInSeason = true;
+	    	} else {
+		    	// Look in tags if still not found
+		    	for(String tag : getTagList()) {
+		    		tag = tag.toUpperCase().toLowerCase();
+		    		if((token.length() > 2 && tag.contains(token)) || tag.equals(token)) {
+		    			// Found in tag
+		    			wasFoundInTagList = true;
+		    			break;
+		    		}
+		    	}
+	    	}
+	    	if(wasFoundInTagList) {
+	    		// Was found, but is a prefix to product name, append to product type
+    			if(productTitleStringBuffer.length() == 0) productTypePrefixStringBuffer.append(token).append(' ');
+	    	} else if(!wasFoundInSeason) {
+	    		// Was not found in tags, keep in product name and append to tags later;
 				if(productTitleStringBuffer.length() == 0) productTitleStringBuffer.append(token);
 				else productTitleStringBuffer.append(' ').append(token);
-				if(!addToTagsLater.contains(token)) addToTagsLater.add(token);
+				if(token.length() > 3 && !addToTagsLater.contains(token)) addToTagsLater.add(token);
 	    	}
 	    }
 	    List<String> tagList = getTagList();
 	    tagList.addAll(addToTagsLater);
 	    setTagList(tagList);
-	    this.productType = productTypePrefixStringBuffer.toString() + productType;
-		this.title = productTitleStringBuffer.toString();
+	    setProductType(productTypePrefixStringBuffer.toString() + productType);
+		setTitle(productTitleStringBuffer.toString());
 	}
 	/**
 	 * @return the tags
@@ -174,6 +192,15 @@ public class Product {
 	@XmlElement( name="variant" )
 	public List<ProductVariant> getVariants() {
 		return variants;
+	}
+	public ProductVariant getVariantFromSku(String sku) {
+		ProductVariant output = null;
+		if(sku != null) {
+			for(ProductVariant variant : getVariants()) {
+				if(sku.equals(variant.getSku())) output = variant;
+			}
+		}
+		return output;
 	}
 	/**
 	 * @param variants the variants to set
