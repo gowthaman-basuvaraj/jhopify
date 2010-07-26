@@ -11,14 +11,14 @@ import org.jhopify.ProductVariant;
 public class DataMerger {
 	static public void mergeFromAPIIntoDatabase(boolean productIds, boolean productImages,
 			boolean variantIds, boolean variantPositions, boolean applyVariantPositionComparator,
-			Collection<Product> productsFromAPI, Map<String, Product> productsFromDatabase) {
+			Collection<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase) {
 
 		System.out.println("Starting merging API data in to database data…");
 		for(Product productFromAPI : productsFromAPI) {
 			// Look for product in local database
 			Product productFromDatabase = productsFromDatabase.get(productFromAPI.getHandle());
 			if(productFromDatabase == null) {
-				System.out.println("Couldn't find in database product with handle \"" + productFromAPI.getHandle() + "\"");
+				throw new RuntimeException("Couldn't find in database product with handle \"" + productFromAPI.getHandle() + "\"");
 			} else {
 				if(productIds) productFromDatabase.setId(productFromAPI.getId());
 				if(productImages)  {
@@ -41,7 +41,7 @@ public class DataMerger {
 							matchingDatabaseVariant = databaseVariant;
 						}
 					}
-					if(matchingDatabaseVariant == null) System.out.println("Couldn't find in database variant with SKU \"" + variantFromAPI.getSku() + "\"");
+					if(matchingDatabaseVariant == null) throw new RuntimeException("Couldn't find in database variant with SKU \"" + variantFromAPI.getSku() + "\"");
 					else {
 						if(variantIds) matchingDatabaseVariant.setId(variantFromAPI.getId());
 						if(variantPositions) matchingDatabaseVariant.setPosition(variantFromAPI.getPosition());

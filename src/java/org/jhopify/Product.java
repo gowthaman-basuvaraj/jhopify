@@ -125,20 +125,36 @@ public class Product {
 	    	}
 	    }
 	    while (st.hasMoreTokens()) {
-	    	String token = st.nextToken().toUpperCase().toLowerCase();
+	    	String token = st.nextToken();
+	    	String tokenLowercase = token.toUpperCase().toLowerCase();
+	    	String tokenLowercaseWithoutApostrophe = tokenLowercase.replace("'", "");
     		boolean wasFoundInTagList = false;
     		boolean wasFoundInSeason = false;
     		
     		// Search for token in season first, then, if still not found, in tags
-	    	if(token.length() > 2 && season != null && season.toUpperCase().toLowerCase().contains(token)) {
+	    	if(token.length() > 2 && season != null && season.toUpperCase().toLowerCase().contains(tokenLowercase)) {
 		    	// Found in season
 	    		wasFoundInSeason = true;
 	    	} else {
 		    	// Look in tags if still not found
 		    	for(String tag : getTagList()) {
-		    		tag = tag.toUpperCase().toLowerCase();
-		    		if((token.length() > 2 && tag.contains(token)) || tag.equals(token)) {
-		    			// Found in tag
+		    		String tagLowerCase = tag.toUpperCase().toLowerCase();
+			    	String tagLowercaseWithoutApostrophe = tagLowerCase.replace("'", "");
+		    		if((token.length() > 2 && tag.contains(token))) {
+		    			wasFoundInTagList = true;
+		    			break;
+		    		} else if(tagLowerCase.equals(tokenLowercase)) {
+		    			// Found in tag, replace token by tag, because tag are usually better capitalized
+		    			token = tag;
+		    			wasFoundInTagList = true;
+		    			break;
+		    		} else if(tagLowercaseWithoutApostrophe.equals(tokenLowercaseWithoutApostrophe)) {
+		    			// Capitalize just in case
+		    			if(token.length() > 1) token = token.charAt(0) + token.substring(1).toUpperCase().toLowerCase();
+
+		    			// Add to tags
+		    			if(token.length() > 3 && !addToTagsLater.contains(token)) addToTagsLater.add(token);
+
 		    			wasFoundInTagList = true;
 		    			break;
 		    		}
@@ -283,8 +299,10 @@ public class Product {
 	void setTagList(List<String> tagList) {
 		StringBuffer sb = new StringBuffer();
 		for(String tag : tagList) {
-			if(sb.length() > 0) sb.append(", ");
-			sb.append(tag);
+			if(!"".equals(tag) && !tag.toUpperCase().toLowerCase().equals("null")) {
+				if(sb.length() > 0) sb.append(", ");
+				sb.append(tag);
+			}
 		}
 		setTags(sb.toString());
 	}
@@ -316,7 +334,6 @@ public class Product {
 	
 	
 	
-	
 	/**********************************
 	* Solr Multivalued Field Wrappers *
 	***********************************
@@ -325,6 +342,10 @@ public class Product {
 	* we made setters that do nothing *
 	**********************************/
 
+	public void addMetafield(Metafield metafield) {
+		this.metafields.add(metafield);
+	}
+	
 	
 	@Field("optionName") public void setOptionNames(List<String> names) {}
 	public List<String> getOptionNames() {

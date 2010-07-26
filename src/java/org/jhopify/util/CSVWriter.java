@@ -13,7 +13,7 @@ import org.jhopify.ProductVariant;
 import com.csvreader.CsvWriter;
 
 public class CSVWriter {
-	 public static void writeCSV(File outputDirectory, String fileName, String webImageRepositoryPrefix, Collection<Product> products) throws IOException {
+	 public static void writeCSV(File outputDirectory, String fileName, String webImageRepositoryPrefix, Collection<? extends Product> products) throws IOException {
 		 CsvWriter writer = new CsvWriter(outputDirectory.getAbsolutePath() + File.separator + fileName, ',', Charset.forName("UTF-8"));
 		 
 		 // Write headers

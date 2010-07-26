@@ -150,7 +150,7 @@ public class ProductAPI extends API {
 	}
 
 	
-	public static void addAllMetafields(String key, String password, String shopifyStoreHandle, List<Product> productsFromAPI, Map<String, Product> productsFromDatabase)
+	public static void addAllMetafields(String key, String password, String shopifyStoreHandle, List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase)
 	throws ClientProtocolException, IOException, URISyntaxException  {
 		int productMetafieldAddedCount = 0;
 		int variantMetafieldAddedCount = 0;
