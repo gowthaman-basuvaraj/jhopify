@@ -254,7 +254,7 @@ public class ProductAPI extends API {
 	        // Look at response
 			if(metafieldPostResponse.getStatusLine().getStatusCode() != HttpStatus.SC_CREATED) {
 				throw new RuntimeException("Halting. Attempt to post metafield with Shopify API at " + URI + " failed : " + 
-						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse));
+						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse) + "\n\n\n\n XML:\n" + metafieldEntityString);
 			}
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);

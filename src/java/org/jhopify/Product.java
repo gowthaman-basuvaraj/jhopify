@@ -12,10 +12,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 import org.apache.solr.client.solrj.beans.Field;
-import org.jhopify.solr.SolrFacade;
 
 @XmlRootElement(name="product")
 public class Product {
+	
+	public static String NULL_STRING_MULTIVALUED_FIELD_VALUE = "N/A";
+	public static Integer NULL_INTEGER_MULTIVALUED_FIELD_VALUE = -1;
+	public static Float NULL_FLOAT_MULTIVALUED_FIELD_VALUE = -1.00f;
 	
 	@Field String id;
 
@@ -353,7 +356,7 @@ public class Product {
 		for(ProductOption option : getOptions()) {
 			String name = option.getName();
 			if(name == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(name);
 			}
@@ -367,7 +370,7 @@ public class Product {
 		for(ProductImage image : getImages()) {
 			String imageSRC = image.getSrc();
 			if(imageSRC == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(imageSRC);
 			}
@@ -381,7 +384,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			String id = variant.getId();
 			if(id == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(id);
 			}
@@ -395,7 +398,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			Integer position = variant.getPosition();
 			if(position == null) {
-				output.add(SolrFacade.NULL_INTEGER_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_INTEGER_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(position);
 			}
@@ -409,7 +412,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			Float price = variant.getPrice();
 			if(price == null) {
-				output.add(SolrFacade.NULL_FLOAT_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_FLOAT_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(price);
 			}
@@ -423,7 +426,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			Float price = variant.getCompareAtPrice();
 			if(price == null) {
-				output.add(SolrFacade.NULL_FLOAT_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_FLOAT_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(price);
 			}
@@ -437,7 +440,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			Integer quantity = variant.getInventoryQuantity();
 			if(quantity == null) {
-				output.add(SolrFacade.NULL_INTEGER_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_INTEGER_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(quantity);
 			}
@@ -451,7 +454,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			String optionValue = variant.getOption1();
 			if(optionValue == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(optionValue);
 			}
@@ -465,7 +468,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			String optionValue = variant.getOption2();
 			if(optionValue == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(optionValue);
 			}
@@ -479,7 +482,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			String optionValue = variant.getOption3();
 			if(optionValue == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(optionValue);
 			}
@@ -493,7 +496,7 @@ public class Product {
 		for(ProductVariant variant : getVariants()) {
 			String sku = variant.getSku();
 			if(sku == null) {
-				output.add(SolrFacade.NULL_STRING_MULTIVALUED_FIELD_VALUE);
+				output.add(NULL_STRING_MULTIVALUED_FIELD_VALUE);
 			} else {
 				output.add(id);
 			}

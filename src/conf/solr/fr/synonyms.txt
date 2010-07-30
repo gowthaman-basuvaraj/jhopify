@@ -1,6 +1,0 @@
-xs, extra small, extra petit
-s, small, petit
-m, medium, médium
-l, large
-xl, extra large
-xxl, super extra large
