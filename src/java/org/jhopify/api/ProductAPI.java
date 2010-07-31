@@ -25,6 +25,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.jhopify.Metafield;
@@ -254,7 +255,7 @@ public class ProductAPI extends API {
 	        // Look at response
 			if(metafieldPostResponse.getStatusLine().getStatusCode() != HttpStatus.SC_CREATED) {
 				throw new RuntimeException("Halting. Attempt to post metafield with Shopify API at " + URI + " failed : " + 
-						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse) + "\n\n\n\n XML:\n" + metafieldEntityString);
+						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse) + "\n\n\n\nXML:\n" + metafieldEntityString);
 			}
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
@@ -264,5 +265,71 @@ public class ProductAPI extends API {
         // shut down the connection manager to ensure
         // immediate deallocation of all system resources
         httpClient.getConnectionManager().shutdown();  
+	}
+	public static void updateAllTitles(String key, String password, String shopifyStoreHandle, List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase) throws ClientProtocolException, IOException, URISyntaxException  {
+		int productTitleModifiedCount = 0;
+
+		System.out.println("Updating product titles to Shopify…");
+		
+		// Create URI components
+		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
+		
+
+		
+
+		for(Product productFromAPI : productsFromAPI) {
+			// Look for product in local database
+			Product productFromDatabase = productsFromDatabase.get(productFromAPI.getHandle());
+			if(productFromDatabase != null) {
+				String databaseProductTitle = productFromDatabase.getTitle();
+				if(databaseProductTitle != null && !databaseProductTitle.equals(productFromAPI.getTitle())) {
+					String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productFromAPI.getId() + ".xml";
+
+					// Prepare API call client
+					HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
+
+					// Prepare HTTP connection
+					URI URI = new URI(shopifyStoreUrl + path);
+			        HttpPut productTitleHttpPut = new HttpPut(URI);
+
+			        // Prepare request content
+			        StringBuffer sb = new StringBuffer();
+			        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<product><title>");
+			        sb.append(databaseProductTitle.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
+			        sb.append("</title>");
+			        sb.append("<id type=\"integer\">");
+			        sb.append(productFromAPI.getId());
+			        sb.append("</id></product>");
+
+			        // Set request content
+			        String productTitleString = sb.toString();
+			        StringEntity productTitleEntity = new StringEntity(productTitleString);
+			        productTitleEntity.setContentType("application/xml");
+			        productTitleHttpPut.setEntity(productTitleEntity);
+			        
+			        // Make sure we dont exceed API call allowance
+			        trafficControl(getStoreHandleFromURI(URI));
+				        
+			        // Execute API call
+			        HttpResponse productTitlePutResponse = httpClient.execute(productTitleHttpPut);
+			        
+			        // Look at response
+					if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+						throw new RuntimeException("Halting. Attempt to update product title at " + URI + " failed : " + 
+								productTitlePutResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + productTitleString);
+					}
+
+			        // When HttpClient instance is no longer needed, 
+			        // shut down the connection manager to ensure
+			        // immediate deallocation of all system resources
+			        httpClient.getConnectionManager().shutdown(); 
+
+					productTitleModifiedCount++;
+				}
+			}
+		} 
+		
+		System.out.println("Successfully modified "+ String.valueOf(productTitleModifiedCount) + " product titles.");
 	}
 }

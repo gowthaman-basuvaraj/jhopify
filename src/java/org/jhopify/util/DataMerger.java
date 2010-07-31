@@ -10,7 +10,7 @@ import org.jhopify.ProductVariant;
 
 public class DataMerger {
 	static public void mergeFromAPIIntoDatabase(boolean productIds, boolean productImages,
-			boolean variantIds, boolean variantPositions, boolean applyVariantPositionComparator,
+			boolean variantIds, boolean variantPositions, boolean variantQuantities, boolean applyVariantPositionComparator,
 			Collection<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase) {
 
 		System.out.println("Starting merging API data in to database data…");
@@ -45,6 +45,7 @@ public class DataMerger {
 					else {
 						if(variantIds) matchingDatabaseVariant.setId(variantFromAPI.getId());
 						if(variantPositions) matchingDatabaseVariant.setPosition(variantFromAPI.getPosition());
+						if(variantQuantities) matchingDatabaseVariant.setInventoryQuantity(variantFromAPI.getInventoryQuantity());
 					}
 				}
 			}
