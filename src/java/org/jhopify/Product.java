@@ -11,7 +11,6 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
-import org.apache.solr.client.solrj.beans.Field;
 
 @XmlRootElement(name="product")
 public class Product {
@@ -20,19 +19,19 @@ public class Product {
 	public static Integer NULL_INTEGER_MULTIVALUED_FIELD_VALUE = -1;
 	public static Float NULL_FLOAT_MULTIVALUED_FIELD_VALUE = -1.00f;
 	
-	@Field String id;
+	String id;
 
 	Date publishedAt;
 
 
-	@Field String handle;
-	@Field String productType;
-	@Field String vendor;
-	@Field String title;
-	@Field String tags;
-	@Field String bodyHtml;
+	String handle;
+	String productType;
+	String vendor;
+	String title;
+	String tags;
+	String bodyHtml;
 
-	@Field("imageName") List<String> imageNames = new ArrayList<String>();
+	List<String> imageNames = new ArrayList<String>();
 
 	List<ProductOption> options = new ArrayList<ProductOption>();
 	List<ProductVariant> variants = new ArrayList<ProductVariant>();
@@ -350,7 +349,7 @@ public class Product {
 	}
 	
 	
-	@Field("optionName") public void setOptionNames(List<String> names) {}
+	public void setOptionNames(List<String> names) {}
 	public List<String> getOptionNames() {
 		List<String> output = new ArrayList<String>();
 		for(ProductOption option : getOptions()) {
@@ -364,7 +363,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("imageSRC") public void setImageSRCs(List<String> urls) {}
+	public void setImageSRCs(List<String> urls) {}
 	public List<String> getImageSRCs() {
 		List<String> output = new ArrayList<String>();
 		for(ProductImage image : getImages()) {
@@ -378,7 +377,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantId") public void setVariantIds(List<String> ids) {}
+	public void setVariantIds(List<String> ids) {}
 	public List<String> getVariantIds() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -392,7 +391,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantPosition") public void setVariantPositions(List<Integer> positions) {}
+	public void setVariantPositions(List<Integer> positions) {}
 	public List<Integer> getVariantPositions() {
 		List<Integer> output = new ArrayList<Integer>();
 		for(ProductVariant variant : getVariants()) {
@@ -406,7 +405,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantPrice") public void setVariantPrices(List<Float> prices) {}
+	public void setVariantPrices(List<Float> prices) {}
 	public List<Float> getVariantPrices() {
 		List<Float> output = new ArrayList<Float>();
 		for(ProductVariant variant : getVariants()) {
@@ -420,7 +419,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantCompareAtPrice") public void setVariantCompareAtPrices(List<Float> prices) {}
+	public void setVariantCompareAtPrices(List<Float> prices) {}
 	public List<Float> getVariantCompareAtPrices() {
 		List<Float> output = new ArrayList<Float>();
 		for(ProductVariant variant : getVariants()) {
@@ -434,7 +433,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantInventoryQuantity") public void setVariantInventoryQuantities(List<Float> quantities) {}
+	public void setVariantInventoryQuantities(List<Float> quantities) {}
 	public List<Integer> getVariantInventoryQuantities() {
 		List<Integer> output = new ArrayList<Integer>();
 		for(ProductVariant variant : getVariants()) {
@@ -448,7 +447,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantOption1Value") public void setVariantOption1Values(List<String> values) {}
+	public void setVariantOption1Values(List<String> values) {}
 	public List<String> getVariantOption1Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -462,7 +461,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantOption2Value") public void setVariantOption2Values(List<String> values) {}
+	public void setVariantOption2Values(List<String> values) {}
 	public List<String> getVariantOption2Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -476,7 +475,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantOption3Value") public void setVariantOption3Values(List<String> values) {}
+	public void setVariantOption3Values(List<String> values) {}
 	public List<String> getVariantOption3Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -490,7 +489,7 @@ public class Product {
 		return output;
 	}
 
-	@Field("variantSKU") public void setVariantSKUs(List<String> skus) {}
+	public void setVariantSKUs(List<String> skus) {}
 	public List<String> getVariantSKUs() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
