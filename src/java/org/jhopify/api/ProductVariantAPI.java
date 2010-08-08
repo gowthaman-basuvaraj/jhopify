@@ -3,13 +3,9 @@ package org.jhopify.api;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.List;
 
 import org.apache.http.client.ClientProtocolException;
 import org.jhopify.Metafield;
-import org.jhopify.Order;
-import org.jhopify.ProductVariant;
 
 public class ProductVariantAPI extends API {
 	public static final String SHOPIFY_API_VARIANT_URI_SUFFIX = "variants";
