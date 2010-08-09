@@ -26,6 +26,7 @@ public class ProductVariant {
 	String option2 = SHOPIFY_API_PRODUCT_DEFAULT_VALUE;
 	String option3 = SHOPIFY_API_PRODUCT_DEFAULT_VALUE;
 	String sku;
+	String productId;
 	Boolean requiresShipping = true;
 	Boolean taxable = true;
 	Double grams;
@@ -229,5 +230,18 @@ public class ProductVariant {
 	 */
 	public void setGrams(Double grams) {
 		this.grams = grams;
+	}
+	/**
+	 * @return the productId
+	 */
+	public String getProductId() {
+		return productId;
+	}
+	/**
+	 * @param productId the productId to set
+	 */
+	@XmlElement(name = "product-id")
+	public void setProductId(String productId) {
+		this.productId = productId;
 	}
 }

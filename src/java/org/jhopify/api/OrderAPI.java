@@ -1,17 +1,129 @@
 package org.jhopify.api;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.stream.StreamSource;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.jhopify.Order;
 
 public class OrderAPI extends API {
-	public static Collection<Order> findOrdersById(
-			String sHOPIFYAPIKEY,
+	static String SHOPIFY_API_ORDERS_SUFFIX = "orders";
+	public static List<Order> findOrdersById(
+			String key,
 			String password,
 			String shopHandle,
-			List<String> idList) {
-		// TODO Auto-generated method stub
-		return null;
+			List<String> idList) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
+
+		List<Order> output = new ArrayList<Order>();
+		
+		if(idList == null || idList.size() < 0) {
+			// No ID specified, retrieve all open orders
+			URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + "." + SHOPIFY_API_DOMAIN +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+			
+			// Prepare HTTP client
+			DefaultHttpClient httpClient = new DefaultHttpClient();
+			httpClient.getCredentialsProvider().setCredentials(
+					new AuthScope(uri.getHost(), SHOPIFY_API_PORT_NUMBER), 
+					new UsernamePasswordCredentials(key, password));
+	        HttpGet httpGet = new HttpGet(uri);
+	        
+
+			// Make sure we dont exceed API call allowance
+	        trafficControl(shopHandle);
+	        
+	        // Execute API call
+			HttpResponse response = httpClient.execute(httpGet);
+			
+			// Look at API response
+			if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+
+				// Unarshall from response XML to object model
+				JAXBContext jaxbContext = JAXBContext.newInstance(OrderListAPIWrapper.class);
+				Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+				String responseString = getContentStringFromResponse(response);
+				JAXBElement<OrderListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), OrderListAPIWrapper.class);
+
+				if(root.getValue() != null) output.addAll(root.getValue().getOrders());
+			} else {
+				throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
+						response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
+			}
+
+	        // When HttpClient instance is no longer needed, 
+	        // shut down the connection manager to ensure
+	        // immediate deallocation of all system resources
+	        httpClient.getConnectionManager().shutdown();  
+		} else  {
+			// Iterate through list of IDs and get order to put in output list
+			for(String id : idList) {
+				Order order = findOrdersById(key, password, shopHandle, id);
+				if(order != null) output.add(order);
+			}
+		}
+		return output;
+	}
+	public static Order findOrdersById(
+			String key,
+			String password,
+			String shopHandle,
+			String id) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
+		Order output = null;
+		
+		// No ID specified, retrieve all open orders
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + "." + SHOPIFY_API_DOMAIN +  
+				SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + "/" + 
+				String.valueOf(id) + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+		
+		// Prepare HTTP client
+		DefaultHttpClient httpClient = new DefaultHttpClient();
+		httpClient.getCredentialsProvider().setCredentials(
+				new AuthScope(uri.getHost(), SHOPIFY_API_PORT_NUMBER), 
+				new UsernamePasswordCredentials(key, password));
+        HttpGet httpGet = new HttpGet(uri);
+        
+
+		// Make sure we dont exceed API call allowance
+        trafficControl(shopHandle);
+        
+        // Execute API call
+		HttpResponse response = httpClient.execute(httpGet);
+		
+		// Look at API response
+		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+
+			// Unarshall from response XML to object model
+			JAXBContext jaxbContext = JAXBContext.newInstance(Order.class);
+			Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+			String responseString = getContentStringFromResponse(response);
+			JAXBElement<Order> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), Order.class);
+
+			output = root.getValue();
+		} else {
+			throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
+					response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
+		}
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpClient.getConnectionManager().shutdown();
+        
+        return output;
 	}
 }

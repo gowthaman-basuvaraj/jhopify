@@ -194,7 +194,7 @@ public class API {
 	        StringEntity metafieldEntity = new StringEntity(metafieldEntityString);
 	        metafieldEntity.setContentType("application/xml");
 	        metafieldHttpPost.setEntity(metafieldEntity);
-	        
+
 	        // Make sure we dont exceed API call allowance
 	        trafficControl(getStoreHandleFromURI(URI));
 		        

@@ -9,7 +9,7 @@ public class OrderLineItem {
 	String id;
 	Float price;
 	String productId;
-	Float quantity;
+	Integer quantity;
 	Boolean requiresShipping;
 	String sku;
 	String title;
@@ -96,13 +96,13 @@ public class OrderLineItem {
 	/**
 	 * @return the quantity
 	 */
-	public Float getQuantity() {
+	public Integer getQuantity() {
 		return quantity;
 	}
 	/**
 	 * @param quantity the quantity to set
 	 */
-	public void setQuantity(Float quantity) {
+	public void setQuantity(Integer quantity) {
 		this.quantity = quantity;
 	}
 	/**
