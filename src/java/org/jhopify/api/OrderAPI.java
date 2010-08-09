@@ -18,6 +18,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.jhopify.Order;
@@ -34,13 +35,10 @@ public class OrderAPI extends API {
 		
 		if(idList == null || idList.size() < 0) {
 			// No ID specified, retrieve all open orders
-			URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + "." + SHOPIFY_API_DOMAIN +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+			URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX);
 			
 			// Prepare HTTP client
-			DefaultHttpClient httpClient = new DefaultHttpClient();
-			httpClient.getCredentialsProvider().setCredentials(
-					new AuthScope(uri.getHost(), SHOPIFY_API_PORT_NUMBER), 
-					new UsernamePasswordCredentials(key, password));
+			HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
 	        HttpGet httpGet = new HttpGet(uri);
 	        
 
@@ -86,7 +84,7 @@ public class OrderAPI extends API {
 		Order output = null;
 		
 		// No ID specified, retrieve all open orders
-		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + "." + SHOPIFY_API_DOMAIN +  
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  
 				SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + "/" + 
 				String.valueOf(id) + SHOPIFY_API_XML_EXTENSION_SUFFIX);
 		

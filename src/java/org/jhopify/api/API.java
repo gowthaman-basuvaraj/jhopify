@@ -42,7 +42,7 @@ import org.jhopify.Metafield;
 
 public class API {
 	public static final String SHOPIFY_API_SCHEME = "http://";
-	public static final String SHOPIFY_API_DOMAIN = "myshopify.com";
+	public static final String SHOPIFY_API_DOMAIN_SUFFIX = ".myshopify.com";
 	public static final String SHOPIFY_API_URI_PREFIX  = "/admin/";
 	public static final String SHOPIFY_API_METAFIELD_LIST_FILE_NAME = "metafields";
 	public static final String SHOPIFY_API_METAFIELD_KEY_QUERY_PARAMETER_NAME = "key";
@@ -165,7 +165,12 @@ public class API {
 	}
 
 	public static String getAPIPasswordForShop(String appSharedSecret, Map<String, String> parameters) {
-		return toHexMD5Digest(String.valueOf(appSharedSecret) + String.valueOf(parameters.get(SHOPIFY_TOKEN_PARAMETER_NAME)));
+		String output = null;
+		if(isGenuinelyFromShopify(appSharedSecret, parameters)) {
+			output = toHexMD5Digest(String.valueOf(appSharedSecret) + 
+					String.valueOf(parameters.get(SHOPIFY_TOKEN_PARAMETER_NAME)));
+		}
+		return output;
 	}
 
 	public static String getShopName(Map<String, String> parameters) {
@@ -174,6 +179,7 @@ public class API {
 	public static void createMetaField(String key, String password, URI URI, Metafield metafield) throws ClientProtocolException, IOException  {
 		// Prepare API call client
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, URI.getHost());
+		System.out.println("Setting a metafield to Shopify at: " + String.valueOf(URI));
 		
 		try {
 			// Prepare for XML marshalling
@@ -206,6 +212,7 @@ public class API {
 				throw new RuntimeException("Halting. Attempt to post metafield with Shopify API at " + URI + " failed : " + 
 						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse) + "\n\n\n\nXML:\n" + metafieldEntityString);
 			}
+			System.out.println("Metafield successfully posted to Shopify at: " + String.valueOf(URI));
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}		
@@ -258,10 +265,11 @@ public class API {
 
 			output = root.getValue().getMetafields();
 
-            System.out.println("Successfuly received from Shopify product list containing " + String.valueOf(output.size()) + " products.");
+            System.out.println("Successfuly received from Shopify metafield list containing " + String.valueOf(output.size()) + " metafields.");
 		} else {
-			throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
-					productListResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productListResponse));
+			throw new IllegalArgumentException("Halting. Attempt to retrieve metafield with Shopify API failed. " + 
+					productListResponse.getStatusLine().toString() + " (" + getContentStringFromResponse(productListResponse) + ")" +
+							" for URI : " + URI);
 		}
 
         // When HttpClient instance is no longer needed, 

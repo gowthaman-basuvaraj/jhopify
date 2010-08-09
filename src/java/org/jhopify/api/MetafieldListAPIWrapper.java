@@ -17,7 +17,7 @@ public class MetafieldListAPIWrapper {
 	/**
 	 * @return the products
 	 */
-	@XmlElement(name = "product", required = true)
+	@XmlElement(name = "metafield", required = true)
 	public List<Metafield> getMetafields() {
 		return metafields;
 	}

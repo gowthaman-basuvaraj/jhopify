@@ -11,7 +11,7 @@ import org.jhopify.Order;
 
 
 @XmlType(name = "")
-@XmlRootElement(name = "order")
+@XmlRootElement(name = "orders")
 public class OrderListAPIWrapper {
 	List<Order> orders = new ArrayList<Order>();
 

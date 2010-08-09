@@ -19,15 +19,12 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.jhopify.Metafield;
 import org.jhopify.Product;
 import org.jhopify.ProductVariant;
@@ -38,12 +35,11 @@ public class ProductAPI extends API {
 	public static final int PRODUCT_LIST_LIMIT_PARAMETER_MAX = 250;
 	
 	public static void saveProducts(String key, String password, String shopifyStoreHandle, Collection<Product> products) throws ClientProtocolException, IOException {
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 
-		DefaultHttpClient httpClient = new DefaultHttpClient();
-		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), 
-				new UsernamePasswordCredentials(key, password));
+		// Prepare client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
 		
 		try {
 			// Prepare for XML marshalling
@@ -94,12 +90,11 @@ public class ProductAPI extends API {
         System.out.println("Getting list of existing products from Shopify…");
 		List<Product> output = new Vector<Product>();
 
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 
-		DefaultHttpClient httpClient = new DefaultHttpClient();
-		httpClient.getCredentialsProvider().setCredentials(new AuthScope(shopifyStoreHostName, SHOPIFY_API_PORT_NUMBER), 
-				new UsernamePasswordCredentials(key, password));
+		// Prepare HTTP client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
 
 
 		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
@@ -205,7 +200,7 @@ public class ProductAPI extends API {
 	throws ClientProtocolException, IOException, URISyntaxException  {
 		// Create URI
 		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" + SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 		createMetaField(key, password, new URI(shopifyStoreUrl + path), metafield);
 	}
@@ -216,7 +211,7 @@ public class ProductAPI extends API {
 		System.out.println("Updating product titles to Shopify…");
 		
 		// Create URI components
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 		
 

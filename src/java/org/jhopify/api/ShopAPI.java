@@ -21,7 +21,7 @@ public class ShopAPI extends API {
 			// Create URI
 			URI URI = new URI(
 					SHOPIFY_API_SCHEME + 
-					shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN + 
+					shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
 					SHOPIFY_API_URI_PREFIX + SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX);
 
 			// Get value
@@ -40,9 +40,9 @@ public class ShopAPI extends API {
 			} //else {
 				URI URI = new URI(
 					SHOPIFY_API_SCHEME + 
-					shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN + 
+					shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
 					SHOPIFY_API_URI_PREFIX + SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX);
-				createMetaField(key, password, URI, new Metafield(namespace, key, Metafield.SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE, value));
+				createMetaField(APIKey, password, URI, new Metafield(namespace, key, Metafield.SHOPIFY_API_METAFIELD_TYPE_STRING_VALUE, value));
 			//}
 		}
 }

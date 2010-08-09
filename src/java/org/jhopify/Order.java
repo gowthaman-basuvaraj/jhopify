@@ -1,8 +1,6 @@
 package org.jhopify;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 
@@ -15,7 +13,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class Order {
 	Boolean buyerAcceptsMarketing;
 	Date closedAt;
-	Currency currency;
+	String String;
 	String email;
 	String financialStatus;
 	String fulfillmentStatus;
@@ -36,7 +34,7 @@ public class Order {
 	Float totalTax;
 	Integer totalWeight;
 	Date updatedAt;
-	InetAddress browserIp;
+	String browserIp;
 	Integer orderNumber;
 	OrderAddress billingAddress;
 	OrderAddress shippingAddress;
@@ -74,16 +72,16 @@ public class Order {
 		this.closedAt = closedAt;
 	}
 	/**
-	 * @return the currency
+	 * @return the String
 	 */
-	public Currency getCurrency() {
-		return currency;
+	public String getString() {
+		return String;
 	}
 	/**
-	 * @param currency the currency to set
+	 * @param String the String to set
 	 */
-	public void setCurrency(Currency currency) {
-		this.currency = currency;
+	public void setString(String String) {
+		this.String = String;
 	}
 	/**
 	 * @return the email
@@ -341,14 +339,14 @@ public class Order {
 	/**
 	 * @return the browserIp
 	 */
-	public InetAddress getBrowserIp() {
+	public String getBrowserIp() {
 		return browserIp;
 	}
 	/**
 	 * @param browserIp the browserIp to set
 	 */
 	@XmlElement(name = "browser-ip")
-	public void setBrowserIp(InetAddress browserIp) {
+	public void setBrowserIp(String browserIp) {
 		this.browserIp = browserIp;
 	}
 	/**

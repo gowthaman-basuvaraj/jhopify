@@ -29,7 +29,7 @@ public class ProductVariantAPI extends API {
 		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" 
 		+ SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variantId + "/" 
 		+ SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
-		String shopifyStoreHostName = shopifyStoreHandle + "." + SHOPIFY_API_DOMAIN;
+		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 		createMetaField(key, password, new URI(shopifyStoreUrl + path), metafield);
 	}
@@ -60,15 +60,16 @@ public class ProductVariantAPI extends API {
 						String itemSKU = item.getSku();
 						if(itemSKU != null && sku.equals(itemSKU.toUpperCase())) {
 							// Adjust quantity
+							System.out.println("Adjusting SKU \"" + itemSKU + "\" from order #" + order.getOrderNumber() + " : -" + item.getQuantity());
 							orderedQuantity += item.getQuantity();
 						}
 					}
 				}
 				// Check if adjustment is necessary
 				if(orderedQuantity > 0) {
-					URI URI = new URI(SHOPIFY_API_SCHEME + shopHandle + "." + SHOPIFY_API_DOMAIN +  
-							SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + 
-							String.valueOf(productId) + "/"+ SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + 
+					URI URI = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  
+							SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + String.valueOf(productId) + 
+							"/"+ SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + 
 							String.valueOf(id) + SHOPIFY_API_XML_EXTENSION_SUFFIX);
 
 					// Prepare API call client
@@ -100,8 +101,12 @@ public class ProductVariantAPI extends API {
 						throw new RuntimeException("Halting. Attempt to update variant inventory quantity  at " + URI + " failed : " + 
 								productTitlePutResponse.getStatusLine().toString() + " " + 
 								getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
+					} else {
+						System.out.println("Sucessfully adjusted SKU \"" + sku + "\" for total adjustment: -" + String.valueOf(orderedQuantity));
 					}
 
+
+					// TODO : make it work even when we throw exception
 			        // When HttpClient instance is no longer needed, 
 			        // shut down the connection manager to ensure
 			        // immediate deallocation of all system resources
