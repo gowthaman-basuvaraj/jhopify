@@ -59,7 +59,7 @@ public class OrderAPI extends API {
 
 				if(root.getValue() != null) output.addAll(root.getValue().getOrders());
 			} else {
-				throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
+				throw new IllegalArgumentException("Halting. Attempt to retrieve order list with Shopify API failed : " + 
 						response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
 			}
 

@@ -334,22 +334,14 @@ public class Product {
 		return output;
 	}
 	
-	
-	
-	/**********************************
-	* Solr Multivalued Field Wrappers *
-	***********************************
-	* JSolr bogusly expects the       *
-	* annotation to be on setters     *
-	* we made setters that do nothing *
-	**********************************/
+
 
 	public void addMetafield(Metafield metafield) {
 		this.metafields.add(metafield);
 	}
 	
 	
-	public void setOptionNames(List<String> names) {}
+
 	public List<String> getOptionNames() {
 		List<String> output = new ArrayList<String>();
 		for(ProductOption option : getOptions()) {
@@ -363,7 +355,7 @@ public class Product {
 		return output;
 	}
 
-	public void setImageSRCs(List<String> urls) {}
+
 	public List<String> getImageSRCs() {
 		List<String> output = new ArrayList<String>();
 		for(ProductImage image : getImages()) {
@@ -377,7 +369,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantIds(List<String> ids) {}
+
 	public List<String> getVariantIds() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -391,7 +383,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantPositions(List<Integer> positions) {}
+
 	public List<Integer> getVariantPositions() {
 		List<Integer> output = new ArrayList<Integer>();
 		for(ProductVariant variant : getVariants()) {
@@ -405,7 +397,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantPrices(List<Float> prices) {}
+
 	public List<Float> getVariantPrices() {
 		List<Float> output = new ArrayList<Float>();
 		for(ProductVariant variant : getVariants()) {
@@ -419,7 +411,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantCompareAtPrices(List<Float> prices) {}
+
 	public List<Float> getVariantCompareAtPrices() {
 		List<Float> output = new ArrayList<Float>();
 		for(ProductVariant variant : getVariants()) {
@@ -433,7 +425,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantInventoryQuantities(List<Float> quantities) {}
+
 	public List<Integer> getVariantInventoryQuantities() {
 		List<Integer> output = new ArrayList<Integer>();
 		for(ProductVariant variant : getVariants()) {
@@ -447,7 +439,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantOption1Values(List<String> values) {}
+
 	public List<String> getVariantOption1Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -461,7 +453,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantOption2Values(List<String> values) {}
+
 	public List<String> getVariantOption2Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -475,7 +467,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantOption3Values(List<String> values) {}
+
 	public List<String> getVariantOption3Values() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
@@ -489,7 +481,7 @@ public class Product {
 		return output;
 	}
 
-	public void setVariantSKUs(List<String> skus) {}
+
 	public List<String> getVariantSKUs() {
 		List<String> output = new ArrayList<String>();
 		for(ProductVariant variant : getVariants()) {
