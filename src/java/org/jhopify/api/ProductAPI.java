@@ -37,7 +37,8 @@ public class ProductAPI extends API {
 	public static final String PRODUCT_LIST_LIMIT_PARAMETER_NAME = "limit";
 	public static final int PRODUCT_LIST_LIMIT_PARAMETER_MAX = 250;
 	
-	public static void saveProducts(String key, String password, String shopifyStoreHandle, Collection<Product> products) throws ClientProtocolException, IOException {
+	public static void saveProducts(String key, String password, String shopifyStoreHandle, Collection<Product> products) 
+	throws ClientProtocolException, IOException {
 		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 
@@ -55,10 +56,12 @@ public class ProductAPI extends API {
 				marshaller.marshal(product, stringWriter);
 				
 				// Prepare HTTP connection
-		        HttpPost productHttpPost = new HttpPost(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+		        HttpPost productHttpPost = new HttpPost(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + 
+		        		SHOPIFY_API_XML_EXTENSION_SUFFIX);
 		        
 		        // Stupid fixes for a stupid API XML DTD
-		        String productEntityString = stringWriter.toString().replace("<variants>", "<variants type=\"array\">").replace("<options>", "<options type=\"array\">");
+		        String productEntityString = stringWriter.toString().replace("<variants>", 
+		        		"<variants type=\"array\">").replace("<options>", "<options type=\"array\">");
 		        
 		        // Prepare request content
 		        StringEntity productEntity = new StringEntity(productEntityString);
@@ -72,8 +75,9 @@ public class ProductAPI extends API {
 		        HttpResponse productPostResponse = httpClient.execute(productHttpPost);
 		        
 		        // Look at response
-				if(productPostResponse.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) System.out.println("Successfuly posted product to Shopify…");
-				else {
+				if(productPostResponse.getStatusLine().getStatusCode() == HttpStatus.SC_CREATED) { 
+					System.out.println("Successfuly posted product to Shopify…");
+				} else {
 					throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
 							productPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productPostResponse));
 				}
@@ -88,6 +92,63 @@ public class ProductAPI extends API {
         httpClient.getConnectionManager().shutdown();  
 	}
 	
+	public static List<Product> getProductListFromAPI(String key, String password, String shopifyStoreHandle, List<String> ids) 
+	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException {
+		List<Product> output = new Vector<Product>();
+		for(String id : ids) {
+			
+			URI uri = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
+					SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + id + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+
+			HttpGet httpGet = new HttpGet(uri);
+	        
+			// Prepare HTTP client
+			HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
+
+
+			System.out.println("Trying to connect to Shopify at " + uri + 
+					" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
+					" with key \"" + key + "\" and password \"" + password +  "\", to retreive product " + 
+					httpGet.getURI() + ".");
+	     
+			
+			// Make sure we dont exceed API call allowance
+	        trafficControl(shopifyStoreHandle);
+	        
+	        // Execute API call
+			HttpResponse productListResponse = httpClient.execute(httpGet);
+			
+			// Look at API response
+			if(productListResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+				
+				// Unarshall from response XML to object model
+				JAXBContext jaxbContext = JAXBContext.newInstance(Product.class);
+				Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+				String responseString = getContentStringFromResponse(productListResponse);
+				JAXBElement<Product> root = unmarshaller.unmarshal(
+						new StreamSource(new StringReader(responseString)),
+						Product.class);
+
+				output.add(root.getValue());
+
+	            System.out.println("Successfuly received product from Shopify.");
+			} else {
+				throw new IllegalArgumentException("Halting. Attempt to get product with Shopify API at " + uri + " failed : " + 
+						productListResponse.getStatusLine().toString() + " " + 
+						getContentStringFromResponse(productListResponse));
+			}
+
+
+	        // When HttpClient instance is no longer needed, 
+	        // shut down the connection manager to ensure
+	        // immediate deallocation of all system resources
+	        httpClient.getConnectionManager().shutdown();
+		}
+        
+    
+		return output;
+	}
+	
 	public static List<Product> getProductListFromAPI(String key, String password, String shopifyStoreHandle) 
 	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException {
         System.out.println("Getting list of existing products from Shopify…");
@@ -100,16 +161,17 @@ public class ProductAPI extends API {
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
 
 
-		// Look here for XML bindings : https://jaxb.dev.java.net/tutorial/
+		// TODO : what happens if more than 250 products (maximum in a request)?
 		URI uri = new URI(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + 
-				SHOPIFY_API_XML_EXTENSION_SUFFIX + "?" + PRODUCT_LIST_LIMIT_PARAMETER_NAME + "=" + String.valueOf(PRODUCT_LIST_LIMIT_PARAMETER_MAX));
+				SHOPIFY_API_XML_EXTENSION_SUFFIX + "?" + PRODUCT_LIST_LIMIT_PARAMETER_NAME + "=" + 
+				String.valueOf(PRODUCT_LIST_LIMIT_PARAMETER_MAX));
         HttpGet httpGet = new HttpGet(uri);
-        httpGet.getParams().setIntParameter(PRODUCT_LIST_LIMIT_PARAMETER_NAME, PRODUCT_LIST_LIMIT_PARAMETER_MAX);
         
 
 		System.out.println("Trying to connect to Shopify at " + shopifyStoreUrl + 
 				" on port " + String.valueOf(SHOPIFY_API_PORT_NUMBER)  + 
-				" with key \"" + key + "\" and password \"" + password +  "\", by retrieving product list at " + httpGet.getURI() + ".");
+				" with key \"" + key + "\" and password \"" + password +  "\", by retrieving product list at " + 
+				httpGet.getURI() + ".");
      
 		
 		// Make sure we dont exceed API call allowance
@@ -125,11 +187,13 @@ public class ProductAPI extends API {
 			JAXBContext jaxbContext = JAXBContext.newInstance(ProductListAPIWrapper.class);
 			Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
 			String responseString = getContentStringFromResponse(productListResponse);
-			JAXBElement<ProductListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), ProductListAPIWrapper.class);
+			JAXBElement<ProductListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), 
+					ProductListAPIWrapper.class);
 
 			output = root.getValue().getProducts();
 
-            System.out.println("Successfuly received from Shopify product list containing " + String.valueOf(output.size()) + " products.");
+            System.out.println("Successfuly received from Shopify product list containing " + String.valueOf(output.size()) + 
+            		" products.");
 		} else {
 			throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
 					productListResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productListResponse));
@@ -146,7 +210,8 @@ public class ProductAPI extends API {
 	}
 
 	
-	public static void addAllMetafields(String key, String password, String shopifyStoreHandle, List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase)
+	public static void addAllMetafields(String key, String password, String shopifyStoreHandle, 
+			List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase)
 	throws ClientProtocolException, IOException, URISyntaxException  {
 		int productMetafieldAddedCount = 0;
 		int variantMetafieldAddedCount = 0;
@@ -179,13 +244,15 @@ public class ProductAPI extends API {
 							variantProcessedCount++;
 							// Look for variant metafields
 							for(Metafield metafield : matchingDatabaseVariant.getMetafields()) {
-								ProductVariantAPI.createVariantMetaField(key, password, shopifyStoreHandle, productFromAPI.getId(), variantFromAPI.getId(), metafield);
+								ProductVariantAPI.createVariantMetaField(key, password, shopifyStoreHandle, productFromAPI.getId(), 
+										variantFromAPI.getId(), metafield);
 								variantMetafieldAddedCount++;
 							}
 							break;
 						}
 					}
-					if(matchingDatabaseVariant == null) System.out.println("Couldn't find in database variant with SKU \"" + variantFromAPI.getSku() + "\"");
+					if(matchingDatabaseVariant == null) System.out.println("Couldn't find in database variant with SKU \"" + 
+							variantFromAPI.getSku() + "\"");
 				}
 			}
 		}
@@ -199,16 +266,20 @@ public class ProductAPI extends API {
 	}
 
 	
-	public static void createProductMetaField(String key, String password, String shopifyStoreHandle, String productId, Metafield metafield)
+	public static void createProductMetaField(String key, String password, String shopifyStoreHandle, 
+			String productId, Metafield metafield)
 	throws ClientProtocolException, IOException, URISyntaxException  {
 		// Create URI
-		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" + SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
+		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" + 
+		SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
 		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 		createMetaField(key, password, new URI(shopifyStoreUrl + path), metafield);
 	}
 
-	public static void updateAllTitles(String key, String password, String shopifyStoreHandle, List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase) throws ClientProtocolException, IOException, URISyntaxException  {
+	public static void updateAllTitles(String key, String password, String shopifyStoreHandle, 
+			List<? extends Product> productsFromAPI, Map<String, ? extends Product> productsFromDatabase) 
+	throws ClientProtocolException, IOException, URISyntaxException  {
 		int productTitleModifiedCount = 0;
 
 		System.out.println("Updating product titles to Shopify…");
@@ -259,7 +330,8 @@ public class ProductAPI extends API {
 			        // Look at response
 					if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
 						throw new RuntimeException("Halting. Attempt to update product title at " + URI + " failed : " + 
-								productTitlePutResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + productTitleString);
+								productTitlePutResponse.getStatusLine().toString() + " " + 
+								getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + productTitleString);
 					}
 
 			        // When HttpClient instance is no longer needed, 
@@ -279,7 +351,8 @@ public class ProductAPI extends API {
 			String key,
 			String password,
 			String shopHandle,
-			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, IllegalStateException, JAXBException {
+			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, 
+			IllegalStateException, JAXBException {
 
 		List<Product> output = new ArrayList<Product>();
 
@@ -305,7 +378,8 @@ public class ProductAPI extends API {
 							String itemSKU = item.getSku();
 							if(itemSKU != null && sku.equals(itemSKU.toUpperCase())) {
 								// Adjust quantity
-								System.out.println("Adjusting SKU \"" + itemSKU + "\" from order #" + order.getOrderNumber() + " : -" + item.getQuantity());
+								System.out.println("Adjusting SKU \"" + itemSKU + "\" from order #" + 
+										order.getOrderNumber() + " : -" + item.getQuantity());
 								orderedQuantity += item.getQuantity();
 							}
 						}
@@ -343,11 +417,13 @@ public class ProductAPI extends API {
 				        
 				        // Look at response
 						if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-							throw new RuntimeException("Halting. Attempt to update variant inventory quantity  at " + URI + " failed : " + 
+							throw new RuntimeException("Halting. Attempt to update variant inventory quantity  at " + 
+									URI + " failed : " + 
 									productTitlePutResponse.getStatusLine().toString() + " " + 
 									getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
 						} else {
-							System.out.println("Sucessfully adjusted SKU \"" + sku + "\" for total adjustment: -" + String.valueOf(orderedQuantity));
+							System.out.println("Sucessfully adjusted SKU \"" + sku + 
+									"\" for total adjustment: -" + String.valueOf(orderedQuantity));
 						}
 
 
@@ -365,5 +441,60 @@ public class ProductAPI extends API {
 			if(isAffected) output.add(product);
 		}
 		return output;
+	}
+	
+	public static List<Product> getProductsWithMetafields(String key, String password, String shopifyStoreHandle, 
+			List<String> ids) throws ClientProtocolException, IllegalStateException, IOException, 
+			JAXBException, URISyntaxException {
+		
+		List<Product> output = null;
+		if(ids != null && ids.size() > 0) output = getProductListFromAPI(key, password, shopifyStoreHandle, ids);
+		else output = getProductListFromAPI(key, password, shopifyStoreHandle);
+
+		// Iterate to get metafields
+		for(Product product: output) {
+			// Get product metafields
+			URI productMetafieldURI = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
+					SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + product.getId() + "/" + 
+					SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+			List<Metafield> productMetafields = getMetafields(key, password, productMetafieldURI);
+			if(productMetafields != null && !productMetafields.isEmpty()) {
+				product.getMetafields().addAll(productMetafields);
+			}
+
+			// Iterate on variants to get metafields
+			for(ProductVariant variant : product.getVariants()) {
+				// Get product metafields
+				URI variantMetafieldURI = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
+						SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + product.getId() + "/" + 
+						ProductVariantAPI.SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variant.getId() + "/" 
+						+ SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+				List<Metafield> variantMetafields = getMetafields(key, password, variantMetafieldURI);
+				if(variantMetafields != null && !variantMetafields.isEmpty()) {
+					variant.getMetafields().addAll(variantMetafields);
+				}
+			}
+		}
+		return output;
+	}
+	
+	static public List<Product> getAffectedProducts(
+			String key,
+			String password,
+			String shopHandle,
+			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, 
+			IllegalStateException, JAXBException {
+
+		// Get product IDs from orders
+		List<String> ids = new ArrayList<String>();
+		for(Order order : orders) {
+			for(OrderLineItem item : order.getLineItems()) {
+				String productId = item.getProductId();
+				if(!ids.contains(productId)) ids.add(productId);
+			}
+		}
+		
+		// Get and return products
+		return getProductsWithMetafields(key, password, shopHandle, ids);
 	}
 }

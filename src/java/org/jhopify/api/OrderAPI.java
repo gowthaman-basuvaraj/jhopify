@@ -104,14 +104,9 @@ public class OrderAPI extends API {
 		
 		// Look at API response
 		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-
-			// Unarshall from response XML to object model
-			JAXBContext jaxbContext = JAXBContext.newInstance(Order.class);
-			Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+			// Unarshall from response XML sto object model
 			String responseString = getContentStringFromResponse(response);
-			JAXBElement<Order> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), Order.class);
-
-			output = root.getValue();
+			output = parseOrderXML(responseString);
 		} else {
 			throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
 					response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
@@ -123,5 +118,11 @@ public class OrderAPI extends API {
         httpClient.getConnectionManager().shutdown();
         
         return output;
+	}
+	
+	public static Order parseOrderXML(String xml) throws JAXBException {
+		JAXBContext jaxbContext = JAXBContext.newInstance(Order.class);
+		Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+		return unmarshaller.unmarshal(new StreamSource(new StringReader(xml)), Order.class).getValue();
 	}
 }
