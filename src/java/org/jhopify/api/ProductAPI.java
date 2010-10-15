@@ -47,7 +47,7 @@ public class ProductAPI extends API {
 		
 		try {
 			// Prepare for XML marshalling
-			JAXBContext jaxbContext = JAXBContext.newInstance( Product.class );
+			JAXBContext jaxbContext = JAXBContext.newInstance(Product.class);
 			Marshaller marshaller = jaxbContext.createMarshaller();
 			marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
 			StringWriter stringWriter = new StringWriter();
