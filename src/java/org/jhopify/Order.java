@@ -22,6 +22,7 @@ public class Order {
 	String landingSite;
 	String landingSiteRef;
 	String name;
+	String currency;
 	String note;
 	Integer number;
 	String referringSite;
@@ -469,5 +470,11 @@ public class Order {
 	@XmlElement( name="note-attribute" )
 	public void setNoteAttributes(List<OrderNoteAttribute> noteAttributes) {
 		this.noteAttributes = noteAttributes;
+	}
+	public String getCurrency() {
+		return currency;
+	}
+	public void setCurrency(String currency) {
+		this.currency = currency;
 	} 
 }

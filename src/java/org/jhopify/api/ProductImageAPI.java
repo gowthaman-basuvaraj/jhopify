@@ -20,6 +20,7 @@ import org.apache.http.entity.StringEntity;
 import org.jhopify.Product;
 import org.jhopify.ProductImage;
 import org.jhopify.util.Base64;
+import org.jhopify.util.Bytes;
 
 public class ProductImageAPI extends API {
 	public static String SHOPIFY_API_IMAGES_URI_PREFIX = "/images";
@@ -95,7 +96,9 @@ public class ProductImageAPI extends API {
 		// Marshall product image to XML
 		ProductImage image = new ProductImage();
 		image.setFilename(imageFile.getName());
-		image.setAttachement(Base64.encodeFromFile(imageFile.getAbsolutePath()));
+		// With Apache Commons Codec instead of this.
+		// image.setAttachement(Base64.encodeFromFile(imageFile.getAbsolutePath()));
+		image.setAttachement(Base64.encodeBytes(Bytes.getBytesFromFile(imageFile)));
 		marshaller.marshal(image, stringWriter);
         // Prepare request content
 		String entityString = stringWriter.toString();

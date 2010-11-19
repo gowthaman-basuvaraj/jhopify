@@ -1,5 +1,7 @@
 package org.jhopify;
 
+import javax.xml.bind.annotation.XmlElement;
+
 public class OrderAddress {
 	String address1;
 	String address2;
@@ -78,6 +80,7 @@ public class OrderAddress {
 	/**
 	 * @return the firstName
 	 */
+	@XmlElement(name = "first-name")
 	public String getFirstName() {
 		return firstName;
 	}
@@ -90,6 +93,7 @@ public class OrderAddress {
 	/**
 	 * @return the lastName
 	 */
+	@XmlElement(name = "last-name")
 	public String getLastName() {
 		return lastName;
 	}

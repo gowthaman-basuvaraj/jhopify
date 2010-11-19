@@ -25,6 +25,47 @@ import org.jhopify.Order;
 
 public class OrderAPI extends API {
 	static String SHOPIFY_API_ORDERS_SUFFIX = "orders";
+	public static List<Order> getAllOrders(
+			String key,
+			String password,
+			String shopHandle) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
+		List<Order> output = new ArrayList<Order>();
+
+		// No ID specified, retrieve all open orders
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY + "&created_at_min=2010-09-01&financial_status=any&status=open");
+		
+		// Prepare HTTP client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
+        HttpGet httpGet = new HttpGet(uri);
+        
+
+		// Make sure we dont exceed API call allowance
+        trafficControl(shopHandle);
+        
+        // Execute API call
+		HttpResponse response = httpClient.execute(httpGet);
+		
+		// Look at API response
+		if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+
+			// Unarshall from response XML to object model
+			JAXBContext jaxbContext = JAXBContext.newInstance(OrderListAPIWrapper.class);
+			Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
+			String responseString = getContentStringFromResponse(response);
+			JAXBElement<OrderListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), OrderListAPIWrapper.class);
+
+			if(root.getValue() != null) output.addAll(root.getValue().getOrders());
+		} else {
+			throw new IllegalArgumentException("Halting. Attempt to retrieve order list with Shopify API failed : " + 
+					response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
+		}
+
+        // When HttpClient instance is no longer needed, 
+        // shut down the connection manager to ensure
+        // immediate deallocation of all system resources
+        httpClient.getConnectionManager().shutdown();
+		return output;
+	}
 	public static List<Order> findOrdersById(
 			String key,
 			String password,
@@ -34,39 +75,7 @@ public class OrderAPI extends API {
 		List<Order> output = new ArrayList<Order>();
 		
 		if(idList == null || idList.size() < 0) {
-			// No ID specified, retrieve all open orders
-			URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX);
-			
-			// Prepare HTTP client
-			HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
-	        HttpGet httpGet = new HttpGet(uri);
-	        
-
-			// Make sure we dont exceed API call allowance
-	        trafficControl(shopHandle);
-	        
-	        // Execute API call
-			HttpResponse response = httpClient.execute(httpGet);
-			
-			// Look at API response
-			if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-
-				// Unarshall from response XML to object model
-				JAXBContext jaxbContext = JAXBContext.newInstance(OrderListAPIWrapper.class);
-				Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
-				String responseString = getContentStringFromResponse(response);
-				JAXBElement<OrderListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), OrderListAPIWrapper.class);
-
-				if(root.getValue() != null) output.addAll(root.getValue().getOrders());
-			} else {
-				throw new IllegalArgumentException("Halting. Attempt to retrieve order list with Shopify API failed : " + 
-						response.getStatusLine().toString() + " " + getContentStringFromResponse(response));
-			}
-
-	        // When HttpClient instance is no longer needed, 
-	        // shut down the connection manager to ensure
-	        // immediate deallocation of all system resources
-	        httpClient.getConnectionManager().shutdown();  
+			output.addAll(getAllOrders(key, password, shopHandle));
 		} else  {
 			// Iterate through list of IDs and get order to put in output list
 			for(String id : idList) {
