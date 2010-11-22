@@ -32,7 +32,7 @@ public class OrderAPI extends API {
 		List<Order> output = new ArrayList<Order>();
 
 		// No ID specified, retrieve all open orders
-		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY + "&created_at_min=2010-09-01&financial_status=any&status=open");
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY + "&created_at_min=2010-09-13&financial_status=paid&status=any");
 		
 		// Prepare HTTP client
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
