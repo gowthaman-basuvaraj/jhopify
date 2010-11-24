@@ -26,7 +26,11 @@ public class ProductVariantAPI extends API {
 	public static void createVariantMetaField(String key, String password, String shopifyStoreHandle, String productId, String variantId, Metafield metafield)
 	throws ClientProtocolException, IOException, URISyntaxException  {
 		// Create URI
-		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" 
+// OLD VERSION
+//		String path = SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + productId + "/" 
+//		+ SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variantId + "/" 
+//		+ SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
+		String path = SHOPIFY_API_URI_PREFIX 
 		+ SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variantId + "/" 
 		+ SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX;
 		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;

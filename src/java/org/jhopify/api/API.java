@@ -182,7 +182,7 @@ public class API {
 	public static void createMetaField(String key, String password, URI URI, Metafield metafield) throws ClientProtocolException, IOException  {
 		// Prepare API call client
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, URI.getHost());
-		System.out.println("Setting a metafield to Shopify at: " + String.valueOf(URI));
+		//System.out.println("Setting a metafield to Shopify at: " + String.valueOf(URI));
 		
 		try {
 			// Prepare for XML marshalling
@@ -215,7 +215,7 @@ public class API {
 				throw new RuntimeException("Halting. Attempt to post metafield with Shopify API at " + URI + " failed : " + 
 						metafieldPostResponse.getStatusLine().toString() + " " + getContentStringFromResponse(metafieldPostResponse) + "\n\n\n\nXML:\n" + metafieldEntityString);
 			}
-			System.out.println("Metafield successfully posted to Shopify at: " + String.valueOf(URI));
+			//System.out.println("Metafield successfully posted to Shopify at: " + String.valueOf(URI));
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}		
