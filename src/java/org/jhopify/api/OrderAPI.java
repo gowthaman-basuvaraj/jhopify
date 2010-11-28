@@ -29,10 +29,21 @@ public class OrderAPI extends API {
 			String key,
 			String password,
 			String shopHandle) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
+		return findOrdersWithQuery(key, password, shopHandle, "created_at_min=2010-09-13&financial_status=paid&status=any");
+	}
+	public static List<Order> findOrdersWithQuery(
+			String key,
+			String password,
+			String shopHandle,
+			String query) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
 		List<Order> output = new ArrayList<Order>();
 
 		// No ID specified, retrieve all open orders
-		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX +  SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY + "&created_at_min=2010-09-13&financial_status=paid&status=any");
+		if(query == null) query = "";
+		else query = "&" + query;
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  SHOPIFY_API_URI_PREFIX + 
+				SHOPIFY_API_ORDERS_SUFFIX + SHOPIFY_API_XML_EXTENSION_SUFFIX + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY + 
+				query);
 		
 		// Prepare HTTP client
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
@@ -79,13 +90,13 @@ public class OrderAPI extends API {
 		} else  {
 			// Iterate through list of IDs and get order to put in output list
 			for(String id : idList) {
-				Order order = findOrdersById(key, password, shopHandle, id);
+				Order order = findOrderById(key, password, shopHandle, id);
 				if(order != null) output.add(order);
 			}
 		}
 		return output;
 	}
-	public static Order findOrdersById(
+	public static Order findOrderById(
 			String key,
 			String password,
 			String shopHandle,

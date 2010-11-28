@@ -11,6 +11,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "order")
 public class Order {
+	public static final String FULFILLED_FULFILLMENT_STATUS_VALUE = "fulfilled";
+	public static final String PARTIAL_FULFILLMENT_STATUS_VALUE = "partial";
+	
 	Boolean buyerAcceptsMarketing;
 	Date closedAt;
 	String String;

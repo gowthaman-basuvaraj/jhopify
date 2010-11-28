@@ -170,7 +170,9 @@ public class ProductAPI extends API {
 		// Prepare HTTP client
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
         
-        while(output.size() < productCount) {
+		int expectedMaximumReceived = 0;
+		int pageReceivedCount = 0;
+        while(expectedMaximumReceived < productCount) {
         	int pageNumber = (output.size() / PRODUCT_LIST_LIMIT_PARAMETER_MAX) + 1;
     		URI uri = new URI(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + 
     				SHOPIFY_API_XML_EXTENSION_SUFFIX + "?" +
@@ -193,22 +195,29 @@ public class ProductAPI extends API {
     		
     		// Look at API response
     		if(productListResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-    			
+
     			// Unarshall from response XML to object model
     			JAXBContext jaxbContext = JAXBContext.newInstance(ProductListAPIWrapper.class);
     			Unmarshaller unmarshaller =jaxbContext.createUnmarshaller();
     			String responseString = getContentStringFromResponse(productListResponse);
-    			JAXBElement<ProductListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), 
-    					ProductListAPIWrapper.class);
-
+    			JAXBElement<ProductListAPIWrapper> root = unmarshaller.unmarshal(new StreamSource(new StringReader(responseString)), ProductListAPIWrapper.class);
     			output.addAll(root.getValue().getProducts());
+
+    	        System.out.println("Successfuly received from Shopify product list containing " + String.valueOf(root.getValue().getProducts().size())
+    	        		+ " products for a total of " + String.valueOf(output.size()) + "/" + String.valueOf(productCount) + " products.");
+    	        
+    	        expectedMaximumReceived += PRODUCT_LIST_LIMIT_PARAMETER_MAX;
+    	        pageReceivedCount++;
     		} else {
     			throw new IllegalArgumentException("Halting. Attempt to post product with Shopify API failed : " + 
     					productListResponse.getStatusLine().toString() + " " + getContentStringFromResponse(productListResponse));
     		}
         }
 
-        System.out.println("Successfuly received from Shopify product list containing " + String.valueOf(output.size()) + " products.");
+        if(output.size() < productCount) System.err.println("Actually received " + String.valueOf(output.size())
+        		+ " products on " + String.valueOf(pageReceivedCount) 
+        		+ " pages (for a max of products per page of " + String.valueOf(PRODUCT_LIST_LIMIT_PARAMETER_MAX) +
+        		" products), when expected count (based on API product count) is of " + String.valueOf(productCount) + " products.");
 
 
         // When HttpClient instance is no longer needed, 
@@ -439,26 +448,39 @@ public class ProductAPI extends API {
 		// Iterate on all product variant to adjust inventory
 		for(Product product : products) {
 			Boolean isAffected = false;
+			String productId = product.getId();
 			for(ProductVariant variant : product.getVariants()) {
 				// Iterate on orders to see if we have matching line items
 				// And count inventory drops;
 				Integer orderedQuantity = 0;
 				String sku = variant.getSku();
 				String id = variant.getId();
-				String productId = variant.getProductId();
-				Integer quantity = variant.getInventoryQuantity();
-				if(sku != null) {
+				
+				if(sku == null || id == null || productId == null) {
+					throw new RuntimeException("BAAAADASSSS PROBLEM");
+				} else {
+					Integer quantity = variant.getInventoryQuantity();
 					sku = sku.toUpperCase();
 					for(Order order : orders) {
 						// Iterate over line items
+						String fulfillmentStatus = order.getFulfillmentStatus();
 						for(OrderLineItem item : order.getLineItems()) {
 							// Check for match
 							String itemSKU = item.getSku();
 							if(itemSKU != null && sku.equals(itemSKU.toUpperCase())) {
-								// Adjust quantity
-								System.out.println("Adjusting SKU \"" + itemSKU + "\" from order #" + 
-										order.getOrderNumber() + " : -" + item.getQuantity());
-								orderedQuantity += item.getQuantity();
+								// If order fulfilled, 
+								String lineFulfillmentStatus = item.getFulfillmentStatus();
+								if(Order.PARTIAL_FULFILLMENT_STATUS_VALUE.equals(fulfillmentStatus)) {
+									if(Order.FULFILLED_FULFILLMENT_STATUS_VALUE.equals(lineFulfillmentStatus)) {
+										orderedQuantity += item.getQuantity();
+									} else {
+										System.err.println("Skipping sku #"  + String.valueOf(sku) +
+												"from partial order #" + String.valueOf(order.getNumber()) + ".");
+									}
+									
+								} else {
+									orderedQuantity += item.getQuantity();
+								}
 							}
 						}
 					}
@@ -543,9 +565,8 @@ public class ProductAPI extends API {
 			// Iterate on variants to get metafields
 			for(ProductVariant variant : product.getVariants()) {
 				// Get product metafields
-				URI variantMetafieldURI = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
-						SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + product.getId() + "/" + 
-						ProductVariantAPI.SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variant.getId() + "/" 
+				URI variantMetafieldURI = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + SHOPIFY_API_URI_PREFIX
+						+ ProductVariantAPI.SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + variant.getId() + "/" 
 						+ SHOPIFY_API_METAFIELD_LIST_FILE_NAME + SHOPIFY_API_XML_EXTENSION_SUFFIX);
 				List<Metafield> variantMetafields = getMetafields(key, password, variantMetafieldURI);
 				if(variantMetafields != null && !variantMetafields.isEmpty()) {
