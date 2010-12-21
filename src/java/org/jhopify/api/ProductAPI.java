@@ -18,6 +18,9 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.http.HttpResponse;
@@ -33,6 +36,12 @@ import org.jhopify.Order;
 import org.jhopify.OrderLineItem;
 import org.jhopify.Product;
 import org.jhopify.ProductVariant;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 public class ProductAPI extends API {
 
@@ -156,7 +165,7 @@ public class ProductAPI extends API {
 	}
 	
 	public static List<Product> getProductListFromAPI(String key, String password, String shopifyStoreHandle) 
-	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException {
+	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException, ParserConfigurationException, SAXException {
 		List<Product> output = new Vector<Product>();
         System.out.println("Getting list of existing products from Shopify…");
         
@@ -230,7 +239,7 @@ public class ProductAPI extends API {
 	}
 
 	
-	private static Integer getProductCount(String key, String password, String shopifyStoreHandle) throws URISyntaxException, ClientProtocolException, IOException, JAXBException {
+	private static Integer getProductCount(String key, String password, String shopifyStoreHandle) throws URISyntaxException, ClientProtocolException, IOException, JAXBException, ParserConfigurationException, SAXException {
 		Integer output = 0;
 
 		// Prepare HTTP client
@@ -251,17 +260,14 @@ public class ProductAPI extends API {
 			
 			// Unmarshall from response XML to object model
 			String responseString = getContentStringFromResponse(response);
-			Matcher matcher = PRODUCT_COUNT_PATTERN.matcher(responseString);
-			if(matcher.matches()) {
-				System.out.println(responseString);
-				String countString = matcher.group(1);
-				if(countString != null) {
-					output = Integer.parseInt(countString);
-				}
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document responseDOM = db.parse(new InputSource(new StringReader(responseString)));
+			NodeList elements = responseDOM.getElementsByTagName("count");
+			for(int i = 0; i < elements.getLength(); i++) {
+				Node node = elements.item(i);
+				output = Integer.parseInt(node.getTextContent());
 			}
-
-			// TODO : ARRRYRHGRGGRGHRHRHGRHGRHGR
-			output = 399;
 
             System.out.println("Successfuly received from Shopify product count of " + String.valueOf(output) + " products.");
 		} else {
@@ -439,7 +445,7 @@ public class ProductAPI extends API {
 			String password,
 			String shopHandle,
 			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, 
-			IllegalStateException, JAXBException {
+			IllegalStateException, JAXBException, ParserConfigurationException, SAXException {
 
 		List<Product> output = new ArrayList<Product>();
 
@@ -545,7 +551,7 @@ public class ProductAPI extends API {
 	
 	public static List<Product> getProductsWithMetafields(String key, String password, String shopifyStoreHandle, 
 			List<String> ids) throws ClientProtocolException, IllegalStateException, IOException, 
-			JAXBException, URISyntaxException {
+			JAXBException, URISyntaxException, ParserConfigurationException, SAXException {
 		
 		List<Product> output = null;
 		if(ids != null && ids.size() > 0) output = getProductListFromAPI(key, password, shopifyStoreHandle, ids);
@@ -582,7 +588,7 @@ public class ProductAPI extends API {
 			String password,
 			String shopHandle,
 			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, 
-			IllegalStateException, JAXBException {
+			IllegalStateException, JAXBException, ParserConfigurationException, SAXException {
 
 		// Get product IDs from orders
 		List<String> ids = new ArrayList<String>();

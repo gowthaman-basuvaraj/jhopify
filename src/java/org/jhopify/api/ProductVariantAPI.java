@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -20,6 +21,7 @@ import org.jhopify.Order;
 import org.jhopify.OrderLineItem;
 import org.jhopify.Product;
 import org.jhopify.ProductVariant;
+import org.xml.sax.SAXException;
 
 public class ProductVariantAPI extends API {
 	public static final String SHOPIFY_API_VARIANT_URI_SUFFIX = "variants";
@@ -43,7 +45,7 @@ public class ProductVariantAPI extends API {
 			String key,
 			String password,
 			String shopHandle,
-			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, IllegalStateException, JAXBException {
+			Collection<Order> orders) throws URISyntaxException, ClientProtocolException, IOException, IllegalStateException, JAXBException, ParserConfigurationException, SAXException {
 		List<ProductVariant> variants = getAllProductVariants(key, password, shopHandle);
 		
 		// Iterate on all product variant to adjust inventory
@@ -122,7 +124,7 @@ public class ProductVariantAPI extends API {
 
 
 	private static List<ProductVariant> getAllProductVariants(String key,
-			String password, String shopHandle) throws ClientProtocolException, IllegalStateException, IOException, JAXBException, URISyntaxException {
+			String password, String shopHandle) throws ClientProtocolException, IllegalStateException, IOException, JAXBException, URISyntaxException, ParserConfigurationException, SAXException {
 		List<ProductVariant> output = new ArrayList<ProductVariant>();
 		List<Product> products = ProductAPI.getProductListFromAPI(key, password, shopHandle);
 		for(Product product : products) {
