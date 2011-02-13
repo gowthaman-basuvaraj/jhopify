@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.xml.bind.JAXBContext;
@@ -36,8 +35,8 @@ import org.jhopify.Order;
 import org.jhopify.OrderLineItem;
 import org.jhopify.Product;
 import org.jhopify.ProductVariant;
+import org.jhopify.api.wrappers.ProductListAPIWrapper;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;

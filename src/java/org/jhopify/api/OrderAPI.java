@@ -22,6 +22,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.jhopify.Order;
+import org.jhopify.api.wrappers.OrderListAPIWrapper;
 
 public class OrderAPI extends API {
 	static String SHOPIFY_API_ORDERS_SUFFIX = "orders";

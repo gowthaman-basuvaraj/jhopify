@@ -39,6 +39,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import org.apache.commons.codec.binary.Hex;
 import org.jhopify.Metafield;
+import org.jhopify.api.wrappers.MetafieldListAPIWrapper;
 
 public class API {
 	public static final String SHOPIFY_API_SCHEME = "http://";

@@ -1,4 +1,4 @@
-package org.jhopify.api;
+package org.jhopify.api.wrappers;
 
 import java.util.ArrayList;
 import java.util.List;
