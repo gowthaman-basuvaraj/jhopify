@@ -18,7 +18,10 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.jhopify.Collect;
+import org.jhopify.Product;
 import org.jhopify.api.wrappers.CollectListAPIWrapper;
 
 public class CollectAPI extends API {
@@ -64,5 +67,47 @@ public class CollectAPI extends API {
         // immediate deallocation of all system resources
         httpClient.getConnectionManager().shutdown();
 		return output;
+	}
+
+
+	public static void createCollect(String key, String password, String shopifyStoreHandle, 
+			String collectionId, Product product) 
+	throws URISyntaxException, ClientProtocolException, IOException {
+		// TODO Auto-generated method stub
+		URI uri = new URI(SHOPIFY_API_SCHEME + shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX + 
+				SHOPIFY_API_URI_PREFIX + "collects.xml");
+
+		// Prepare API call client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, uri.getHost());
+
+		// Prepare HTTP connection
+		HttpPost method = new HttpPost(uri);
+
+        // Prepare request content
+        StringBuffer sb = new StringBuffer();
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<collect><product-id type=\"integer\">");
+        sb.append(product.getId());
+        sb.append("</product-id><collection-id type=\"integer\">");
+        sb.append(collectionId);
+        sb.append("</collection-id></collect>");
+
+        // Set request content
+        String entityString = sb.toString();
+        StringEntity entity = new StringEntity(entityString);
+        entity.setContentType("application/xml");
+        method.setEntity(entity);
+        
+        // Make sure we dont exceed API call allowance
+        trafficControl(getStoreHandleFromURI(uri));
+	        
+        // Execute API call
+        HttpResponse productTitlePutResponse = httpClient.execute(method);
+        
+        // Look at response
+		if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_CREATED) {
+			throw new RuntimeException("Halting. Failure to create collect at " + uri + " failed : " + 
+					productTitlePutResponse.getStatusLine().toString() + " " + 
+					getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
+		}
 	}
 }

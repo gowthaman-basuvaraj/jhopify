@@ -601,4 +601,94 @@ public class ProductAPI extends API {
 		// Get and return products
 		return getProductsWithMetafields(key, password, shopHandle, ids);
 	}
+	
+	static public void setPrices(
+			String key,
+			String password,
+			String shopHandle,
+			Product product) throws URISyntaxException, ClientProtocolException, IOException {
+		for(ProductVariant variant : product.getVariants()) {
+			URI URI = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  
+					SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + product.getId() + 
+					"/"+ ProductVariantAPI.SHOPIFY_API_VARIANT_URI_SUFFIX + "/" + 
+					variant.getId() + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+
+			// Prepare API call client
+			HttpClient httpClient = getAuthenticatedHttpClient(key, password, URI.getHost());
+
+			// Prepare HTTP connection
+			HttpPut method = new HttpPut(URI);
+
+	        // Prepare request content
+	        StringBuffer sb = new StringBuffer();
+	        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<variant><compare-at-price type=\"decimal\">");
+	        sb.append(variant.getCompareAtPrice());
+	        sb.append("</compare-at-price><price type=\"decimal\">");
+	        sb.append(variant.getPrice());
+	        sb.append("</price></variant>");
+
+	        // Set request content
+	        String entityString = sb.toString();
+	        StringEntity entity = new StringEntity(entityString);
+	        entity.setContentType("application/xml");
+	        method.setEntity(entity);
+	        
+	        // Make sure we dont exceed API call allowance
+	        trafficControl(getStoreHandleFromURI(URI));
+		        
+	        // Execute API call
+	        HttpResponse productTitlePutResponse = httpClient.execute(method);
+	        
+	        // Look at response
+			if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+				throw new RuntimeException("Halting. Attempt to update variant inventory quantity  at " + URI + " failed : " + 
+						productTitlePutResponse.getStatusLine().toString() + " " + 
+						getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
+			} else {
+				System.out.println("Sucessfully adjusted prices for SKU \"" + variant.getSku() + "\".");
+			}
+		}
+	}
+	
+	static public void setTitle(
+			String key,
+			String password,
+			String shopHandle,
+			Product product) throws URISyntaxException, ClientProtocolException, IOException {
+		URI URI = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  
+				SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + product.getId() + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+
+		// Prepare API call client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, URI.getHost());
+
+		// Prepare HTTP connection
+		HttpPut method = new HttpPut(URI);
+
+        // Prepare request content
+        StringBuffer sb = new StringBuffer();
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<product><title>");
+        sb.append(product.getTitle());
+        sb.append("</title></product>");
+
+        // Set request content
+        String entityString = sb.toString();
+        StringEntity entity = new StringEntity(entityString);
+        entity.setContentType("application/xml");
+        method.setEntity(entity);
+        
+        // Make sure we dont exceed API call allowance
+        trafficControl(getStoreHandleFromURI(URI));
+	        
+        // Execute API call
+        HttpResponse productTitlePutResponse = httpClient.execute(method);
+        
+        // Look at response
+		if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+			throw new RuntimeException("Halting. Attempt to update product title at " + URI + " failed : " + 
+					productTitlePutResponse.getStatusLine().toString() + " " + 
+					getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
+		} else {
+			System.out.println("Sucessfully updated product title for handle \"" + product.getHandle() + "\".");
+		}
+	}
 }
