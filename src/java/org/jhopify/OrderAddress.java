@@ -154,6 +154,7 @@ public class OrderAddress {
 	/**
 	 * @return the countryCode
 	 */
+	@XmlElement( name="country-code" )
 	public String getCountryCode() {
 		return countryCode;
 	}
@@ -166,6 +167,7 @@ public class OrderAddress {
 	/**
 	 * @return the provinceCode
 	 */
+	@XmlElement( name="province-code" )
 	public String getProvinceCode() {
 		return provinceCode;
 	}
