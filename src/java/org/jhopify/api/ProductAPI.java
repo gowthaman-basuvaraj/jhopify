@@ -49,6 +49,7 @@ public class ProductAPI extends API {
 	public static final int PRODUCT_LIST_LIMIT_PARAMETER_MAX = 250;
 	public static final String PRODUCT_LIST_PAGE_PARAMETER_NAME = "page";
 	public static final Pattern PRODUCT_COUNT_PATTERN = Pattern.compile("([0-9]+)");
+	public static final String PRODUCT_LIST_COLLECTION_ID_PARAMETER_NAME = "collection_id";
 	
 	
 	public static void saveProducts(String key, String password, String shopifyStoreHandle, Collection<Product> products) 
@@ -162,14 +163,18 @@ public class ProductAPI extends API {
     
 		return output;
 	}
-	
 	public static List<Product> getProductListFromAPI(String key, String password, String shopifyStoreHandle) 
+	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException, ParserConfigurationException, SAXException {
+		return getProductListFromAPI2(key, password, shopifyStoreHandle, null);
+	}
+	
+	public static List<Product> getProductListFromAPI2(String key, String password, String shopifyStoreHandle, String collectionId) 
 	throws ClientProtocolException, IOException, IllegalStateException, JAXBException, URISyntaxException, ParserConfigurationException, SAXException {
 		List<Product> output = new Vector<Product>();
         System.out.println("Getting list of existing products from Shopify…");
         
         // Get product count
-        Integer productCount = getProductCount(key, password, shopifyStoreHandle);
+        Integer productCount = getProductCount(key, password, shopifyStoreHandle, collectionId);
 
 		// Prepare constants
 		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
@@ -180,12 +185,13 @@ public class ProductAPI extends API {
         
 		int expectedMaximumReceived = 0;
 		int pageReceivedCount = 0;
+		String collectionSuffix = collectionId == null ? "" : "&" + PRODUCT_LIST_COLLECTION_ID_PARAMETER_NAME + "=" + collectionId;
         while(expectedMaximumReceived < productCount) {
         	int pageNumber = (output.size() / PRODUCT_LIST_LIMIT_PARAMETER_MAX) + 1;
     		URI uri = new URI(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + 
     				SHOPIFY_API_XML_EXTENSION_SUFFIX + "?" +
     				PRODUCT_LIST_LIMIT_PARAMETER_NAME + "=" + String.valueOf(PRODUCT_LIST_LIMIT_PARAMETER_MAX) +
-    				"&" + PRODUCT_LIST_PAGE_PARAMETER_NAME + "=" + String.valueOf(pageNumber));
+    				"&" + PRODUCT_LIST_PAGE_PARAMETER_NAME + "=" + String.valueOf(pageNumber) + collectionSuffix);
             HttpGet httpGet = new HttpGet(uri);
             
 
@@ -238,14 +244,16 @@ public class ProductAPI extends API {
 	}
 
 	
-	private static Integer getProductCount(String key, String password, String shopifyStoreHandle) throws URISyntaxException, ClientProtocolException, IOException, JAXBException, ParserConfigurationException, SAXException {
+	private static Integer getProductCount(String key, String password, String shopifyStoreHandle, String collectionId) 
+	throws URISyntaxException, ClientProtocolException, IOException, JAXBException, ParserConfigurationException, SAXException {
 		Integer output = 0;
 
 		// Prepare HTTP client
 		String shopifyStoreHostName = shopifyStoreHandle + SHOPIFY_API_DOMAIN_SUFFIX;
 		String shopifyStoreUrl = SHOPIFY_API_SCHEME + shopifyStoreHostName;
 		HttpClient httpClient = getAuthenticatedHttpClient(key, password, shopifyStoreHostName);
-		URI uri = new URI(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + PRODUCT_COUNT_SUFFIX);
+		String collectionSuffix = collectionId == null ? "" : "?" + PRODUCT_LIST_COLLECTION_ID_PARAMETER_NAME + "=" + collectionId;
+		URI uri = new URI(shopifyStoreUrl + SHOPIFY_API_PRODUCT_URI_PREFIX + PRODUCT_COUNT_SUFFIX + collectionSuffix);
         HttpGet httpGet = new HttpGet(uri);
 	
         // Make sure we dont exceed API call allowance
