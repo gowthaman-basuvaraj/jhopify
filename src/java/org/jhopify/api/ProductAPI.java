@@ -26,6 +26,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -697,6 +698,34 @@ public class ProductAPI extends API {
 					getContentStringFromResponse(productTitlePutResponse) + "\n\n\n\nXML:\n" + entityString);
 		} else {
 			System.out.println("Sucessfully updated product title for handle \"" + product.getHandle() + "\".");
+		}
+	}
+	
+	static public void delete(
+			String key,
+			String password,
+			String shopHandle,
+			String id) throws URISyntaxException, ClientProtocolException, IOException {
+		URI URI = new URI(SHOPIFY_API_SCHEME + shopHandle + SHOPIFY_API_DOMAIN_SUFFIX +  
+				SHOPIFY_API_PRODUCT_URI_PREFIX + "/" + id + SHOPIFY_API_XML_EXTENSION_SUFFIX);
+
+		// Prepare API call client
+		HttpClient httpClient = getAuthenticatedHttpClient(key, password, URI.getHost());
+
+		// Prepare HTTP connection
+		HttpDelete method = new HttpDelete(URI);
+        
+        // Make sure we dont exceed API call allowance
+        trafficControl(getStoreHandleFromURI(URI));
+	        
+        // Execute API call
+        HttpResponse productTitlePutResponse = httpClient.execute(method);
+        
+        // Look at response
+		if(productTitlePutResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+			throw new RuntimeException("Halting. Attempt to delete product  " + URI + " failed : " + 
+					productTitlePutResponse.getStatusLine().toString() + " " + 
+					getContentStringFromResponse(productTitlePutResponse));
 		}
 	}
 }
