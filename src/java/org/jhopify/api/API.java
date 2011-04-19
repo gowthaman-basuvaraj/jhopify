@@ -44,6 +44,7 @@ import org.jhopify.api.wrappers.MetafieldListAPIWrapper;
 public class API {
 	public static final String SHOPIFY_API_SCHEME = "http://";
 	public static final String SHOPIFY_API_DOMAIN_SUFFIX = ".myshopify.com";
+	public static final String SHOPIFY_API_ORDERS_SUFFIX = "orders";
 	public static final String SHOPIFY_API_URI_PREFIX  = "/admin/";
 	public static final String SHOPIFY_API_METAFIELD_LIST_FILE_NAME = "metafields";
 	public static final String SHOPIFY_API_METAFIELD_KEY_QUERY_PARAMETER_NAME = "key";
@@ -120,7 +121,6 @@ public class API {
 			apiCallsSinceLastReset++;
 		}
 		public void reset() {
-			System.out.println("Resetting API timeout…");
 			this.apiCallsSinceLastReset = 0;
 			Calendar calendar = Calendar.getInstance();
 			calendar.add(Calendar.MINUTE, QUERY_PERIODIC_RESET_IN_MINUTES);

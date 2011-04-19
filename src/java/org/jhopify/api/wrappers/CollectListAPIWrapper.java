@@ -12,20 +12,20 @@ import org.jhopify.Collect;
 @XmlType(name = "")
 @XmlRootElement(name = "collects")
 public class CollectListAPIWrapper {
-	List<Collect> Collects = new ArrayList<Collect>();
+	List<Collect> collects = new ArrayList<Collect>();
 
 	/**
 	 * @return the Collects
 	 */
 	@XmlElement(name = "collect", required = true)
 	public List<Collect> getCollects() {
-		return Collects;
+		return collects;
 	}
 
 	/**
 	 * @param Collects the Collects to set
 	 */
 	public void setCollects(List<Collect> Collects) {
-		this.Collects = Collects;
+		this.collects = Collects;
 	}
 }

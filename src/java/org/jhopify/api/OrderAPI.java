@@ -25,7 +25,6 @@ import org.jhopify.Order;
 import org.jhopify.api.wrappers.OrderListAPIWrapper;
 
 public class OrderAPI extends API {
-	static String SHOPIFY_API_ORDERS_SUFFIX = "orders";
 	public static List<Order> getAllOrders(
 			String key,
 			String password,
