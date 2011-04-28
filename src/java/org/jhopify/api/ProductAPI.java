@@ -700,7 +700,7 @@ public class ProductAPI extends API {
 			System.out.println("Sucessfully updated product title for handle \"" + product.getHandle() + "\".");
 		}
 	}
-	
+
 	static public void delete(
 			String key,
 			String password,
