@@ -57,8 +57,8 @@ public class API {
 	public static final String SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY = "?" + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_NAME + "=" + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_VALUE;
 	public static final String SHOPIFY_API_XML_EXTENSION_SUFFIX = ".xml";
 	public static final int SHOPIFY_API_PORT_NUMBER = 80;
-	public static final int QUERY_PER_PERIOD_PER_STORE_ALLOWANCE = 120;
-	public static final int QUERY_PERIODIC_RESET_IN_MINUTES = 1;
+	public static final int QUERY_PER_PERIOD_PER_STORE_ALLOWANCE = 300;
+	public static final int QUERY_PERIODIC_RESET_IN_MINUTES = 10;
 	public static final String SHOPIFY_CALCULATED_SIGNATURE_PARAMETER_NAME = "signature";
 	public static final String SHOPIFY_SHOP_PARAMETER_NAME = "shop";
 	public static final String SHOPIFY_TOKEN_PARAMETER_NAME = "t";
