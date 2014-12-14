@@ -42,7 +42,7 @@ import org.jhopify.Metafield;
 import org.jhopify.api.wrappers.MetafieldListAPIWrapper;
 
 public class API {
-	public static final String SHOPIFY_API_SCHEME = "http://";
+	public static final String SHOPIFY_API_SCHEME = "https://";
 	public static final String SHOPIFY_API_DOMAIN_SUFFIX = ".myshopify.com";
 	public static final String SHOPIFY_API_ORDERS_SUFFIX = "orders";
 	public static final String SHOPIFY_API_URI_PREFIX  = "/admin/";
@@ -56,7 +56,7 @@ public class API {
 	public static final String SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_VALUE = "250";
 	public static final String SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_QUERY = "?" + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_NAME + "=" + SHOPIFY_API_OBJECT_LIST_LIMIT_PARAMETER_MAXIMUM_VALUE;
 	public static final String SHOPIFY_API_XML_EXTENSION_SUFFIX = ".xml";
-	public static final int SHOPIFY_API_PORT_NUMBER = 80;
+	public static final int SHOPIFY_API_PORT_NUMBER = 443;
 	public static final int QUERY_PER_PERIOD_PER_STORE_ALLOWANCE = 300;
 	public static final int QUERY_PERIODIC_RESET_IN_MINUTES = 10;
 	public static final String SHOPIFY_CALCULATED_SIGNATURE_PARAMETER_NAME = "signature";
